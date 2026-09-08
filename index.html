@@ -390,15 +390,18 @@
     sesuaiFisik: [["Sesuai Data & Fisik",10],["Tidak Sesuai, fisik lebih sedikit dari Accurate",5],["Tidak Sesuai, fisik lebih banyak dari Accurate",10]],
     sesuai2: [["Sesuai",10],["Tidak Sesuai",0]],
     logEdit: [["Tidak ada yang diedit",10],["Ada yang diedit, bukan nominal",5],["Ada yang diedit, nominal",0]],
-    harga: [["Sesuai dengan harga barang yang current",10],["Tidak sesuai dengan harga barang yang current",0]]
+    harga: [["Sesuai dengan harga barang yang current",10],["Tidak sesuai dengan harga barang yang current",0]],
+    gudang: [["Tidak ada barang tidak terpakai",10],["Ada barang tidak terpakai",0]]
   };
 
   var CATEGORIES = [
     { id:"kebersihan", name:"Kebersihan & Kelayakan Toko", items:[
-      {id:"toilet", label:"Kondisi Area Toilet", opt:"bersih"},
+      {id:"parkir", label:"Kondisi Area Parkir", opt:"bersihParkir"},
       {id:"pelayanan", label:"Kondisi Area Pelayanan", opt:"bersih"},
       {id:"teknisi", label:"Kondisi Area Teknisi", opt:"bersih"},
-      {id:"parkir", label:"Kondisi Area Parkir", opt:"bersihParkir"}
+      {id:"toilet", label:"Kondisi Area Toilet", opt:"bersih"},
+      {id:"ruang_meeting", label:"Kondisi Area Ruang Meeting", opt:"bersih"},
+      {id:"gudang", label:"Kondisi Area Gudang", opt:"gudang"}
     ]},
     { id:"kelengkapan_toko", name:"Kelengkapan Toko", items:[
       {id:"tisu", label:"Kelengkapan Tisu", opt:"tersedia2"},
@@ -442,11 +445,11 @@
       {id:"transfer", label:"Cek Transfer di Mutasi Rekening (Accurate & Rill)", opt:"sesuai2", noEvidence:true}
     ]},
     { id:"transaksi", name:"Check Transaksi & Harga", items:[
-      {id:"log", label:"Check Log Activities", opt:"logEdit"},
+      {id:"log", label:"Check Log Activities", opt:"logEdit", noEvidence:true},
       {id:"harga_gadget", label:"Cek Harga Gadget di Pricetag", opt:"harga"},
       {id:"harga_aksesoris", label:"Cek Harga Aksesoris di Pricetag", opt:"harga"},
       {id:"harga_sparepart", label:"Cek Harga Sparepart di Accurate", opt:"harga"},
-      {id:"harga_jasa", label:"Cek Harga Jasa Teknisi di Accurate", opt:"harga"}
+      {id:"harga_jasa", label:"Cek Harga Jasa Teknisi di Accurate", opt:"harga", noEvidence:true}
     ]}
   ];
 
