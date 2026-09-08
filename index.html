@@ -372,6 +372,7 @@
   /* ---------------- data ---------------- */
   var OPT = {
     bersih: [["Sangat Bersih dan Layak digunakan",10],["Cukup Bersih dan Layak digunakan",7],["Kurang Bersih dan Layak digunakan",4],["Sangat Kotor dan Tidak Layak digunakan",0]],
+    bersihParkir: [["Sudah Bersih",10],["Cukup Bersih",7],["Kurang Bersih",4],["Sangat Kotor",0]],
     tersedia2: [["Tersedia",10],["Tidak Tersedia",0]],
     tersediaFungsi: [["Tersedia dan Berfungsi",10],["Tersedia dan Tidak Berfungsi",5],["Tidak Tersedia",0]],
     kontenRelevan: [["Tersedia dan Konten Relevan",10],["Tersedia dan Konten Tidak Relevan",5],["Tidak Tersedia",0]],
@@ -386,7 +387,8 @@
     { id:"kebersihan", name:"Kebersihan & Kelayakan Toko", items:[
       {id:"toilet", label:"Kondisi Area Toilet", opt:"bersih"},
       {id:"pelayanan", label:"Kondisi Area Pelayanan", opt:"bersih"},
-      {id:"teknisi", label:"Kondisi Area Teknisi", opt:"bersih"}
+      {id:"teknisi", label:"Kondisi Area Teknisi", opt:"bersih"},
+      {id:"parkir", label:"Kondisi Area Parkir", opt:"bersihParkir"}
     ]},
     { id:"kelengkapan_toko", name:"Kelengkapan Toko", items:[
       {id:"tisu", label:"Kelengkapan Tisu", opt:"tersedia2"},
