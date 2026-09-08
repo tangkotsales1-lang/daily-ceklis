@@ -204,7 +204,7 @@
   .photoPick svg{width:15px; height:15px;}
   .photoNote{font-size:11.5px; color:var(--ink-soft); width:100%;}
 
-  .evidence{display:flex; align-items:center; gap:9px; margin-top:10px;}
+  .evidence{display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-top:10px;}
   .evThumbWrap{position:relative; flex:none;}
   .evThumb{width:44px; height:44px; object-fit:cover; border-radius:8px; border:1px solid var(--line); display:block; cursor:zoom-in;}
   .evRemove{
@@ -219,6 +219,13 @@
   }
   .evPick:hover{border-color:var(--accent); color:var(--accent-ink);}
   .evPick svg{width:13px; height:13px;}
+  .evNote{font-size:11px; color:var(--ink-soft); width:100%; margin-top:1px;}
+  .itemNoteInput{
+    width:100%; padding:7px 10px; border-radius:8px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); font-size:12.5px; margin-top:2px;
+  }
+  .itemNoteInput:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .itemNoteInput::placeholder{color:var(--ink-soft);}
 
   .photoBadge{
     display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:99px;
@@ -266,6 +273,9 @@
   .subgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px;}
   .subrow{display:flex; justify-content:space-between; gap:8px; font-size:12.5px; padding:6px 9px; background:var(--surface); border:1px solid var(--line); border-radius:8px;}
   .subrow span:last-child{font-family:"IBM Plex Mono"; font-weight:600;}
+  .notesBlock{margin-top:10px; display:flex; flex-direction:column; gap:6px;}
+  .noteRow{font-size:12.5px; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 10px;}
+  .noteRow strong{color:var(--ink-soft); font-weight:600;}
 
   .sectionHead{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px;}
   .sectionHead h2{font-size:19px; margin:0;}
@@ -412,25 +422,24 @@
       {id:"stok_hp", label:"Stok Handphone", opt:"lengkap"},
       {id:"stok_laptop", label:"Stok Laptop", opt:"lengkap"},
       {id:"stok_aksesoris", label:"Stok Aksesoris", opt:"lengkap"},
-      {id:"total_hp", label:"Total Stok Handphone (Accurate & Rill)", opt:"sesuaiFisik"},
-      {id:"total_laptop", label:"Total Stok Laptop (Accurate & Rill)", opt:"sesuaiFisik"},
-      {id:"total_aksesoris", label:"Total Stok Aksesoris (Accurate & Rill)", opt:"sesuaiFisik"},
-      {id:"total_sparepart", label:"Total Stok Sparepart (Accurate & Rill)", opt:"sesuaiFisik"}
+      {id:"total_hp", label:"Total Stok Handphone (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true},
+      {id:"total_laptop", label:"Total Stok Laptop (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true},
+      {id:"total_aksesoris", label:"Total Stok Aksesoris (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true},
+      {id:"total_sparepart", label:"Total Stok Sparepart (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true}
     ]},
     { id:"gadget_pending", name:"Gadget Pending", items:[
-      {id:"unit_dibawa", label:"Total Gadget Unit Dibawa (Accurate & Rill)", opt:"sesuaiFisik"},
-      {id:"bukti_dibawa", label:"Lampirkan Bukti Foto Gadget Dibawa (Chat Customer)", proof:true},
-      {id:"unit_ditinggal", label:"Total Gadget Unit Ditinggal (Accurate & Rill)", opt:"sesuaiFisik"},
-      {id:"bukti_ditinggal", label:"Lampirkan Bukti Foto Gadget Ditinggal (Foto unit di meja teknisi)", proof:true}
-      // NB: both "bukti_*" items above are optional photo attachments (proof:true) — see
-      // scorableItems()/requiredAnsweredCount() above: they're excluded from the required
-      // item count and never contribute to the score.
+      {id:"unit_dibawa", label:"Total Gadget Unit Dibawa (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true},
+      {id:"unit_ditinggal", label:"Total Gadget Unit Ditinggal (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true},
+      {id:"laptop_ditinggal", label:"Total Laptop Unit Ditinggal (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true}
+      // NB: the "sesuaiFisik" items in this category and in "stok" above have
+      // noEvidence:true — no per-item photo/note block, since it doesn't add value
+      // for a straight quantity reconciliation check.
     ]},
     { id:"uang", name:"Check Uang Masuk", items:[
       {id:"cash", label:"Cek Uang Cash di Meja Admin (Accurate & Rill)", opt:"sesuai2"},
       {id:"qris", label:"Cek QRIS di Merchant (Accurate & Rill)", opt:"sesuai2"},
       {id:"edc", label:"Cek EDC (Accurate & Rill)", opt:"sesuai2"},
-      {id:"transfer", label:"Cek Transfer di Mutasi Rekening (Accurate & Rill)", opt:"sesuai2"}
+      {id:"transfer", label:"Cek Transfer di Mutasi Rekening (Accurate & Rill)", opt:"sesuai2", noEvidence:true}
     ]},
     { id:"transaksi", name:"Check Transaksi & Harga", items:[
       {id:"log", label:"Check Log Activities", opt:"logEdit"},
@@ -460,7 +469,8 @@
 
   /* ---------------- state ---------------- */
   var answers = {}; // key -> {score, catId, label, value}
-  var photos = {}; // key -> {catId, label, src}  — optional evidence photo per item, doesn't affect score
+  var photos = {}; // key -> [{catId, label, src}, ...]  — optional evidence photos per item (multiple allowed), doesn't affect score
+  var notes = {}; // key -> free-text note per item, typed by the Store Leader, doesn't affect score
   var openCat = CATEGORIES[0].id;
   var submissions = [];
   var sb = null;
@@ -588,7 +598,8 @@
       );
     }
     var options = OPT[it.opt];
-    var ph = photos[key];
+    var phList = photos[key] || [];
+    var EV_MIN_RECOMMENDED = 3;
     return (
       '<div class="item">'+
         '<div class="item-label">'+esc(it.label)+'</div>'+
@@ -599,19 +610,25 @@
             return '<button type="button" class="opt" data-picked="'+(pickedNow?1:0)+'" data-tier="'+tier(score)+'" data-pick="'+key+'" data-label="'+esc(label)+'" data-score="'+score+'">'+esc(label)+'</button>';
           }).join("")+
         '</div>'+
-        '<div class="evidence">'+
-          (ph ?
-            '<div class="evThumbWrap">'+
-              '<img class="evThumb" data-zoom="1" src="'+ph.src+'" alt="Bukti foto">'+
-              '<button type="button" class="evRemove" data-ev-remove="'+key+'" aria-label="Hapus foto">&times;</button>'+
-            '</div>'
-          : '')+
-          '<label class="evPick">'+
-            '<svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="1.6"/></svg>'+
-            (ph ? "Ganti foto" : "Lampirkan foto bukti (opsional)")+
-            '<input type="file" accept="image/*" capture="environment" data-ev-input="'+key+'" hidden>'+
-          '</label>'+
-        '</div>'+
+        (it.noEvidence ? '' :
+          '<div class="evidence">'+
+            phList.map(function(p, idx){
+              return (
+                '<div class="evThumbWrap">'+
+                  '<img class="evThumb" data-zoom="1" src="'+p.src+'" alt="Bukti foto">'+
+                  '<button type="button" class="evRemove" data-ev-remove="'+key+'::'+idx+'" aria-label="Hapus foto">&times;</button>'+
+                '</div>'
+              );
+            }).join("")+
+            '<label class="evPick">'+
+              '<svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="1.6"/></svg>'+
+              (phList.length ? "Tambah foto lagi" : "Lampirkan foto bukti (opsional)")+
+              '<input type="file" accept="image/*" capture="environment" data-ev-input="'+key+'" hidden>'+
+            '</label>'+
+            '<span class="evNote">Opsional, tidak memengaruhi skor — disarankan minimal '+EV_MIN_RECOMMENDED+' foto sebagai bukti pendukung ('+phList.length+'/'+EV_MIN_RECOMMENDED+').</span>'+
+            '<input type="text" class="itemNoteInput" data-note-input="'+key+'" value="'+esc(notes[key]||"")+'" placeholder="Tambahkan catatan (opsional)...">'+
+          '</div>'
+        )+
       '</div>'
     );
   }
@@ -620,8 +637,17 @@
     var toggleCat = e.target.closest("[data-toggle-cat]");
     if (toggleCat){
       var id = toggleCat.getAttribute("data-toggle-cat");
-      openCat = (openCat === id) ? null : id;
+      var wasOpen = openCat === id;
+      openCat = wasOpen ? null : id;
       renderAccordion();
+      if (!wasOpen){
+        var newHead = accordionEl.querySelector('[data-toggle-cat="'+id+'"]');
+        if (newHead){
+          requestAnimationFrame(function(){
+            newHead.scrollIntoView({behavior:"smooth", block:"start"});
+          });
+        }
+      }
       return;
     }
     var pickBtn = e.target.closest("[data-pick]");
@@ -647,8 +673,22 @@
     }
     var evRemoveBtn = e.target.closest("[data-ev-remove]");
     if (evRemoveBtn){
-      delete photos[evRemoveBtn.getAttribute("data-ev-remove")];
+      var evTarget = evRemoveBtn.getAttribute("data-ev-remove").split("::");
+      var evKey = evTarget[0], evIdx = Number(evTarget[1]);
+      if (photos[evKey]){
+        photos[evKey].splice(evIdx, 1);
+        if (!photos[evKey].length) delete photos[evKey];
+      }
       renderAccordion();
+    }
+  });
+  // Separate listener (not re-rendering the accordion) so typing in a note field never
+  // loses focus/cursor position — a full renderAccordion() on every keystroke would rebuild
+  // the DOM and kick the user out of the input mid-word.
+  accordionEl.addEventListener("input", function(e){
+    var t = e.target;
+    if (t.matches("[data-note-input]")){
+      notes[t.getAttribute("data-note-input")] = t.value;
     }
   });
   accordionEl.addEventListener("change", function(e){
@@ -670,7 +710,8 @@
       var item5 = CATEGORIES.find(function(c){ return c.id===cat5; });
       var itemDef = item5 && item5.items.find(function(i){ return cat5+"."+i.id === key5; });
       compressImageFile(t.files[0], { maxDim:800, targetBytes:40*1024 }).then(function(dataUrl){
-        photos[key5] = { catId: cat5, label: itemDef ? itemDef.label : key5, src: dataUrl };
+        if (!photos[key5]) photos[key5] = [];
+        photos[key5].push({ catId: cat5, label: itemDef ? itemDef.label : key5, src: dataUrl });
         renderAccordion();
       }).catch(function(){
         toast("Gagal memproses foto, coba lagi.");
@@ -741,6 +782,7 @@
   function resetForm(){
     answers = {};
     photos = {};
+    notes = {};
     openCat = CATEGORIES[0].id;
     fLeader.value = "";
     fTanggal.value = todayISO();
@@ -758,12 +800,20 @@
 
   document.getElementById("saveBtn").addEventListener("click", function(){
     var pct = currentPercent();
-    var photoKeys = Object.keys(photos);
+    // One entry per photo (an item key repeats if it has more than one photo attached),
+    // so photoKeys.length always reflects the true total photo count.
+    var photoKeys = [];
+    Object.keys(photos).forEach(function(k){ (photos[k]||[]).forEach(function(){ photoKeys.push(k); }); });
+    // Free-text notes ride along inside the same "answers" jsonb blob under a reserved key
+    // (no dot in it, so it can never collide with a real "catId.itemId" answer key) — this
+    // avoids needing a separate database column/migration just for notes.
+    var notesSnapshot = Object.assign({}, notes);
     var record = {
       branch: fCabang.value,
       date: fTanggal.value,
       leader: fLeader.value.trim(),
-      answers: answers,
+      answers: Object.assign({}, answers, { _meta_notes: notesSnapshot }),
+      notes: notesSnapshot,
       percent: Math.round(pct*100)/100,
       minExpected: MIN_EXPECTED,
       totalItems: TOTAL_ITEMS,
@@ -800,9 +850,11 @@
         if (res.error) throw res.error;
         var subId = res.data.id;
         if (!photoKeys.length) return;
-        var photoRows = photoKeys.map(function(k){
-          var p = photosSnapshot[k];
-          return { submission_id: subId, item_key: k, cat_id: p.catId, label: p.label, src: p.src };
+        var photoRows = [];
+        Object.keys(photosSnapshot).forEach(function(k){
+          (photosSnapshot[k]||[]).forEach(function(p){
+            photoRows.push({ submission_id: subId, item_key: k, cat_id: p.catId, label: p.label, src: p.src });
+          });
         });
         return sb.from("submission_photos").insert(photoRows).then(function(r2){ if (r2.error) throw r2.error; });
       }).then(function(){ finish(true); fetchSubmissions(); }).catch(function(){ finish(false); });
@@ -849,7 +901,7 @@
       var evidenceCount = (s.photoKeys && s.photoKeys.length) || 0;
       var totalPhotoCount = photoItems.length + evidenceCount;
       if (s._localPhotos){
-        Object.keys(s._localPhotos).forEach(function(k){ photoItems.push(s._localPhotos[k]); });
+        Object.keys(s._localPhotos).forEach(function(k){ photoItems = photoItems.concat(s._localPhotos[k] || []); });
       } else if (ticketPhotoCache[s.id]){
         photoItems = photoItems.concat(ticketPhotoCache[s.id]);
       }
@@ -863,6 +915,20 @@
       var badgeHtml = totalPhotoCount ? (
         '<span class="photoBadge"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="1.6"/></svg>'+totalPhotoCount+'</span>'
       ) : "";
+      // Free-text notes the Store Leader typed per item (stored inline in the answers jsonb).
+      var noteEntries = [];
+      CATEGORIES.forEach(function(cat){
+        cat.items.forEach(function(it){
+          if (it.proof) return;
+          var n = (s.notes && s.notes[cat.id+"."+it.id]) || "";
+          if (n.trim()) noteEntries.push({ label: it.label, text: n.trim() });
+        });
+      });
+      var notesHtml = noteEntries.length ? (
+        '<div class="notesBlock">'+
+          noteEntries.map(function(n){ return '<div class="noteRow"><strong>'+esc(n.label)+':</strong> '+esc(n.text)+'</div>'; }).join("")+
+        '</div>'
+      ) : "";
       return (
         '<div class="ticket'+(isOpen?' open':'')+'" data-ticket="'+s.id+'">'+
           '<div class="ticket-head" data-toggle-ticket="'+s.id+'">'+
@@ -875,7 +941,7 @@
               '<svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'+
             '</button>'+
           '</div>'+
-          '<div class="ticket-body"><div class="subgrid">'+catSubtotals+'</div>'+photosHtml+'</div>'+
+          '<div class="ticket-body"><div class="subgrid">'+catSubtotals+'</div>'+photosHtml+notesHtml+'</div>'+
         '</div>'
       );
     }).join("");
@@ -943,12 +1009,14 @@
 
   /* ---------------- db wiring (Supabase) ---------------- */
   function rowToSubmission(row){
+    var rawAnswers = row.answers || {};
     return {
       id: row.id,
       branch: row.branch,
       date: row.visit_date,
       leader: row.leader,
-      answers: row.answers || {},
+      answers: rawAnswers,
+      notes: rawAnswers._meta_notes || {},
       percent: Number(row.percent),
       minExpected: Number(row.min_expected),
       totalItems: row.total_items,
