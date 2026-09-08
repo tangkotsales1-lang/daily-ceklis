@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ceklis Harian Store Leader</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FF7A1A">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ceklis Harian">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --ink:#12182B;
+    --ink-soft:#4B5468;
+    --paper:#EEF1F6;
+    --surface:#FFFFFF;
+    --surface-2:#E4E9F2;
+    --line:#D6DCE7;
+    --accent:#FF7A1A;
+    --accent-ink:#7A2E00;
+    --accent-tint:#FFE7D3;
+    --good:#16825D;
+    --good-bg:#DDF3E9;
+    --warn:#B9770E;
+    --warn-bg:#FBEBCF;
+    --bad:#C0342A;
+    --bad-bg:#FBE1DE;
+    --shadow:0 1px 2px rgba(18,24,43,.06), 0 8px 24px -12px rgba(18,24,43,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#EAEDF4;
+      --ink-soft:#A6AFC4;
+      --paper:#0C1220;
+      --surface:#141B2C;
+      --surface-2:#1B2338;
+      --line:#2A3350;
+      --accent:#FF8A3D;
+      --accent-ink:#FFDCBB;
+      --accent-tint:#3A2412;
+      --good:#3FCB92;
+      --good-bg:#12301F;
+      --warn:#F0B429;
+      --warn-bg:#332508;
+      --bad:#FF6B5E;
+      --bad-bg:#341311;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#EAEDF4;
+    --ink-soft:#A6AFC4;
+    --paper:#0C1220;
+    --surface:#141B2C;
+    --surface-2:#1B2338;
+    --line:#2A3350;
+    --accent:#FF8A3D;
+    --accent-ink:#FFDCBB;
+    --accent-tint:#3A2412;
+    --good:#3FCB92;
+    --good-bg:#12301F;
+    --warn:#F0B429;
+    --warn-bg:#332508;
+    --bad:#FF6B5E;
+    --bad-bg:#341311;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Source Sans 3",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:88px;
+  }
+  h1,h2,h3,.display{
+    font-family:"Barlow Semi Condensed",system-ui,sans-serif;
+    text-wrap:balance;
+    letter-spacing:.01em;
+  }
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums;}
+  button{font:inherit;}
+  input,select{font:inherit; color:inherit;}
+
+  .wrap{max-width:880px; margin:0 auto; padding:0 20px;}
+
+  /* ---- topbar ---- */
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    background:color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .brandrow{display:flex; align-items:center; gap:12px; padding:16px 0 12px;}
+  .brandmark{
+    width:38px; height:38px; border-radius:10px; flex:none;
+    background:linear-gradient(155deg, var(--accent), #C4470C);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:var(--shadow);
+  }
+  .brandmark svg{width:20px; height:20px;}
+  .brandtext h1{font-size:21px; font-weight:700; line-height:1.1; margin:0;}
+  .brandtext p{margin:2px 0 0; font-size:12.5px; color:var(--ink-soft); letter-spacing:.03em; text-transform:uppercase;}
+
+  .tabs{display:flex; gap:4px; padding-bottom:12px;}
+  .tab{
+    appearance:none; border:1px solid transparent; background:transparent;
+    padding:7px 14px; border-radius:8px; font-size:14.5px; font-weight:600;
+    color:var(--ink-soft); cursor:pointer; transition:background .15s, color .15s;
+  }
+  .tab:hover{background:var(--surface-2);}
+  .tab[aria-selected="true"]{background:var(--ink); color:var(--paper);}
+  .tab .count{
+    display:inline-block; margin-left:6px; padding:0 6px; border-radius:99px;
+    background:var(--accent-tint); color:var(--accent-ink); font-size:11.5px; font-weight:700;
+  }
+  .tab[aria-selected="true"] .count{background:rgba(255,255,255,.18); color:var(--paper);}
+
+  /* ---- fields ---- */
+  .fieldrow{display:grid; grid-template-columns:1.1fr 1fr 1.2fr; gap:10px; padding:2px 0 16px;}
+  @media (max-width:640px){ .fieldrow{grid-template-columns:1fr;} }
+  .field label{display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-bottom:5px;}
+  .field select, .field input[type="date"], .field input[type="text"]{
+    width:100%; padding:9px 11px; border-radius:9px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); font-size:14.5px;
+  }
+  .field select:focus, .field input:focus{outline:2px solid var(--accent); outline-offset:1px;}
+
+  /* ---- hero score ---- */
+  .hero{
+    display:flex; align-items:center; gap:18px; background:var(--surface);
+    border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin-bottom:18px;
+    box-shadow:var(--shadow);
+  }
+  .hero-score{font-family:"IBM Plex Mono"; font-weight:600; font-size:40px; line-height:1; flex:none; font-variant-numeric:tabular-nums;}
+  .hero-mid{flex:1; min-width:0;}
+  .hero-mid .label{font-size:12.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;}
+  .barTrack{height:8px; border-radius:99px; background:var(--surface-2); overflow:hidden;}
+  .barFill{height:100%; border-radius:99px; background:var(--accent); transition:width .4s ease;}
+  .hero-note{font-size:12.5px; color:var(--ink-soft); margin-top:6px;}
+  .pill{
+    display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:99px;
+    font-size:12.5px; font-weight:700; white-space:nowrap;
+  }
+  .pill.good{background:var(--good-bg); color:var(--good);}
+  .pill.warn{background:var(--warn-bg); color:var(--warn);}
+  .pill.bad{background:var(--bad-bg); color:var(--bad);}
+  .pill svg{width:13px; height:13px;}
+
+  /* ---- accordion ---- */
+  .cat{background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:10px; overflow:hidden; box-shadow:var(--shadow);}
+  .cat-head{
+    display:flex; align-items:center; gap:12px; width:100%; padding:14px 16px; cursor:pointer;
+    background:none; border:none; text-align:left; color:inherit;
+  }
+  .cat-num{
+    flex:none; width:26px; height:26px; border-radius:8px; background:var(--surface-2);
+    display:flex; align-items:center; justify-content:center; font-family:"IBM Plex Mono"; font-size:13px; font-weight:600; color:var(--ink-soft);
+  }
+  .cat-title{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+  .cat-title .name{font-size:17px; font-weight:600;}
+  .cat-title .sub{font-size:12px; color:var(--ink-soft);}
+  .cat-score{font-family:"IBM Plex Mono"; font-size:13.5px; font-weight:600; color:var(--ink-soft); flex:none;}
+  .chev{flex:none; width:18px; height:18px; transition:transform .2s ease; color:var(--ink-soft);}
+  .cat.open .chev{transform:rotate(180deg);}
+  .cat-body{display:none; border-top:1px solid var(--line);}
+  .cat.open .cat-body{display:block;}
+
+  .item{padding:14px 16px; border-bottom:1px solid var(--line);}
+  .item:last-child{border-bottom:none;}
+  .item-label{font-size:14.5px; font-weight:600; margin-bottom:9px;}
+  .options{display:flex; flex-wrap:wrap; gap:7px;}
+  .opt{
+    appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink);
+    padding:7px 12px; border-radius:9px; font-size:13.5px; font-weight:500; cursor:pointer;
+    transition:background .12s, border-color .12s, color .12s;
+  }
+  .opt:hover{border-color:var(--ink-soft);}
+  .opt[data-picked="1"][data-tier="good"]{background:var(--good-bg); border-color:var(--good); color:var(--good);}
+  .opt[data-picked="1"][data-tier="warn"]{background:var(--warn-bg); border-color:var(--warn); color:var(--warn);}
+  .opt[data-picked="1"][data-tier="bad"]{background:var(--bad-bg); border-color:var(--bad); color:var(--bad);}
+
+  .photoRow{display:flex; flex-wrap:wrap; align-items:center; gap:12px;}
+  .photoThumbWrap{position:relative; flex:none;}
+  .photoThumb{width:72px; height:72px; object-fit:cover; border-radius:10px; border:1px solid var(--line); display:block; cursor:zoom-in;}
+  .photoRemove{
+    position:absolute; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%;
+    background:var(--bad); color:#fff; border:2px solid var(--surface); font-size:13px; line-height:1;
+    cursor:pointer; appearance:none; display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .photoPick{
+    display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:9px;
+    border:1px dashed var(--line); font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer;
+    transition:border-color .12s, color .12s;
+  }
+  .photoPick:hover{border-color:var(--accent); color:var(--accent-ink);}
+  .photoPick svg{width:15px; height:15px;}
+  .photoNote{font-size:11.5px; color:var(--ink-soft); width:100%;}
+
+  .evidence{display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-top:10px;}
+  .evThumbWrap{position:relative; flex:none;}
+  .evThumb{width:44px; height:44px; object-fit:cover; border-radius:8px; border:1px solid var(--line); display:block; cursor:zoom-in;}
+  .evRemove{
+    position:absolute; top:-6px; right:-6px; width:16px; height:16px; border-radius:50%;
+    background:var(--bad); color:#fff; border:2px solid var(--surface); font-size:10px; line-height:1;
+    cursor:pointer; appearance:none; display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .evPick{
+    display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:8px;
+    border:1px dashed var(--line); font-size:12px; font-weight:600; color:var(--ink-soft); cursor:pointer;
+    transition:border-color .12s, color .12s;
+  }
+  .evPick:hover{border-color:var(--accent); color:var(--accent-ink);}
+  .evPick svg{width:13px; height:13px;}
+  .evNote{font-size:11px; color:var(--ink-soft); width:100%; margin-top:1px;}
+  .itemNoteInput{
+    width:100%; padding:7px 10px; border-radius:8px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); font-size:12.5px; margin-top:2px;
+  }
+  .itemNoteInput:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .itemNoteInput::placeholder{color:var(--ink-soft);}
+
+  .photoBadge{
+    display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:99px;
+    background:var(--surface-2); color:var(--ink-soft); font-size:11.5px; font-weight:600; flex:none;
+  }
+  .photoBadge svg{width:12px; height:12px;}
+  .photoLoading{font-size:12px; color:var(--ink-soft); padding:6px 0;}
+
+  /* ---- action bar ---- */
+  .actionbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    background:color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter:blur(10px); border-top:1px solid var(--line);
+  }
+  .actionbar .in{max-width:880px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:14px;}
+  .progressText{font-size:13px; color:var(--ink-soft); flex:1;}
+  .progressText strong{color:var(--ink);}
+  .btn{
+    appearance:none; border:none; border-radius:10px; padding:11px 20px; font-size:14.5px; font-weight:700;
+    cursor:pointer; transition:opacity .15s, transform .1s;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent); color:#221000;}
+  .btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-ghost{background:var(--surface-2); color:var(--ink);}
+
+  /* ---- history ---- */
+  .empty{padding:40px 20px; text-align:center; color:var(--ink-soft); font-size:14px;}
+  .histFilters{display:flex; gap:10px; margin-bottom:14px;}
+  .histFilters select{padding:8px 10px; border-radius:9px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:13.5px;}
+  .ticket{background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:10px; box-shadow:var(--shadow); overflow:hidden;}
+  .ticket-head{display:flex; align-items:center; gap:12px; padding:13px 16px; cursor:pointer;}
+  .ticket-branch{font-weight:700; font-size:15px;}
+  .ticket-date{font-size:12.5px; color:var(--ink-soft); font-family:"IBM Plex Mono";}
+  .ticket-leader{font-size:12.5px; color:var(--ink-soft); flex:1;}
+  .ticketDelete{
+    appearance:none; border:none; background:transparent; color:var(--ink-soft); cursor:pointer;
+    flex:none; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    transition:background .12s, color .12s;
+  }
+  .ticketDelete:hover{background:var(--bad-bg); color:var(--bad);}
+  .ticketDelete svg{width:15px; height:15px;}
+  .ticket-body{display:none; border-top:1px solid var(--line); padding:12px 16px; background:var(--surface-2);}
+  .ticket.open .ticket-body{display:block;}
+  .subgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px;}
+  .subrow{display:flex; justify-content:space-between; gap:8px; font-size:12.5px; padding:6px 9px; background:var(--surface); border:1px solid var(--line); border-radius:8px;}
+  .subrow span:last-child{font-family:"IBM Plex Mono"; font-weight:600;}
+  .notesBlock{margin-top:10px; display:flex; flex-direction:column; gap:6px;}
+  .noteRow{font-size:12.5px; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 10px;}
+  .noteRow strong{color:var(--ink-soft); font-weight:600;}
+
+  .sectionHead{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px;}
+  .sectionHead h2{font-size:19px; margin:0;}
+  .hint{font-size:12px; color:var(--ink-soft);}
+  .toast{
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(10px); opacity:0;
+    background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:10px; font-size:13.5px; font-weight:600;
+    box-shadow:var(--shadow); transition:opacity .2s, transform .2s; z-index:40; pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .photoStrip{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
+  .photoStripItem{width:110px; font-size:11px; color:var(--ink-soft); text-align:center;}
+  .photoStripItem img{width:110px; height:110px; object-fit:cover; border-radius:10px; border:1px solid var(--line); margin-bottom:4px; cursor:zoom-in; display:block;}
+
+  .lightbox{
+    position:fixed; inset:0; background:rgba(8,10,18,.8); display:none; align-items:center; justify-content:center;
+    padding:28px; z-index:50; cursor:zoom-out;
+  }
+  .lightbox.show{display:flex;}
+  .lightbox img{max-width:100%; max-height:100%; border-radius:12px; box-shadow:var(--shadow);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="brandrow">
+      <div class="brandmark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#1A0C00" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="brandtext">
+        <h1>Daily Activity Checklist</h1>
+        <p>Store Leader &middot; Kunjungan Cabang</p>
+      </div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" id="tabFillBtn" role="tab" aria-selected="true">Isi Ceklis</button>
+      <button class="tab" id="tabHistBtn" role="tab" aria-selected="false">Riwayat<span class="count" id="histCount">0</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" style="padding-top:18px;">
+
+  <!-- FILL TAB -->
+  <div id="viewFill">
+    <div class="fieldrow">
+      <div class="field">
+        <label for="fCabang">Cabang</label>
+        <select id="fCabang"></select>
+      </div>
+      <div class="field">
+        <label for="fTanggal">Tanggal Kunjungan</label>
+        <input type="date" id="fTanggal">
+      </div>
+      <div class="field">
+        <label for="fLeader">Nama Store Leader</label>
+        <input type="text" id="fLeader" placeholder="Nama lengkap" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-score mono" id="heroScore">0.0</div>
+      <div class="hero-mid">
+        <div class="label">Skor ceklis &middot; target minimum <span class="mono">86.00</span></div>
+        <div class="barTrack"><div class="barFill" id="heroBar" style="width:0%"></div></div>
+        <div class="hero-note" id="heroNote">Belum ada item yang dinilai.</div>
+      </div>
+      <span class="pill" id="heroPill"></span>
+    </div>
+
+    <div id="accordion"></div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="viewHist" style="display:none;">
+    <div class="sectionHead">
+      <h2>Riwayat Ceklis</h2>
+      <span class="hint" id="dbHint"></span>
+    </div>
+    <div class="histFilters">
+      <select id="histBranchFilter"><option value="">Semua cabang</option></select>
+    </div>
+    <div id="histList"></div>
+  </div>
+</div>
+
+<div class="actionbar">
+  <div class="in">
+    <div class="progressText" id="progressText"><strong>0</strong> / 0 item terisi</div>
+    <button class="btn btn-ghost" id="resetBtn" type="button">Reset</button>
+    <button class="btn btn-primary" id="saveBtn" type="button" disabled>Simpan Ceklis</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt="Bukti foto diperbesar"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- data ---------------- */
+  var OPT = {
+    bersih: [["Sangat Bersih dan Layak digunakan",10],["Cukup Bersih dan Layak digunakan",7],["Kurang Bersih dan Layak digunakan",4],["Sangat Kotor dan Tidak Layak digunakan",0]],
+    bersihParkir: [["Sudah Bersih",10],["Cukup Bersih",7],["Kurang Bersih",4],["Sangat Kotor",0]],
+    tersedia2: [["Tersedia",10],["Tidak Tersedia",0]],
+    tersediaFungsi: [["Tersedia dan Berfungsi",10],["Tersedia dan Tidak Berfungsi",5],["Tidak Tersedia",0]],
+    kontenRelevan: [["Tersedia dan Konten Relevan",10],["Tersedia dan Konten Tidak Relevan",5],["Tidak Tersedia",0]],
+    lengkap: [["Tersedia & Lengkap",10],["Tersedia & Tidak Lengkap",5],["Tidak Tersedia",0]],
+    sesuaiFisik: [["Sesuai Data & Fisik",10],["Tidak Sesuai, fisik lebih sedikit dari Accurate",5],["Tidak Sesuai, fisik lebih banyak dari Accurate",10]],
+    sesuai2: [["Sesuai",10],["Tidak Sesuai",0]],
+    logEdit: [["Tidak ada yang diedit",10],["Ada yang diedit, bukan nominal",5],["Ada yang diedit, nominal",0]],
+    harga: [["Sesuai dengan harga barang yang current",10],["Tidak sesuai dengan harga barang yang current",0]],
+    gudang: [["Tidak ada barang tidak terpakai",10],["Ada barang tidak terpakai",0]]
+  };
+
+  var CATEGORIES = [
+    { id:"kebersihan", name:"Kebersihan & Kelayakan Toko", items:[
+      {id:"parkir", label:"Kondisi Area Parkir", opt:"bersihParkir"},
+      {id:"pelayanan", label:"Kondisi Area Pelayanan", opt:"bersih"},
+      {id:"teknisi", label:"Kondisi Area Teknisi", opt:"bersih"},
+      {id:"toilet", label:"Kondisi Area Toilet", opt:"bersih"},
+      {id:"ruang_meeting", label:"Kondisi Area Ruang Meeting", opt:"bersih"},
+      {id:"gudang", label:"Kondisi Area Gudang", opt:"gudang"}
+    ]},
+    { id:"kelengkapan_toko", name:"Kelengkapan Toko", items:[
+      {id:"tisu", label:"Kelengkapan Tisu", opt:"tersedia2"},
+      {id:"keset", label:"Kelengkapan Keset", opt:"tersedia2"},
+      {id:"lampu", label:"Kelengkapan Lampu", opt:"tersedia2"},
+      {id:"alat_kebersihan", label:"Kelengkapan Alat Kebersihan", opt:"tersedia2"},
+      {id:"cairan_kebersihan", label:"Kelengkapan Cairan Kebersihan", opt:"tersedia2"},
+      {id:"atk", label:"Kelengkapan ATK", opt:"tersedia2"},
+      {id:"pengharum", label:"Kelengkapan Pengharum Ruangan", opt:"tersediaFungsi"},
+      {id:"tv", label:"Kelengkapan TV", opt:"tersediaFungsi"},
+      {id:"cctv", label:"Kelengkapan CCTV", opt:"tersediaFungsi"},
+      {id:"ac", label:"Kelengkapan AC", opt:"tersediaFungsi"}
+    ]},
+    { id:"promosi", name:"Kelengkapan Alat Promosi", items:[
+      {id:"reklame", label:"Kondisi Reklame Depan", opt:"kontenRelevan"},
+      {id:"xbanner", label:"Kondisi X Banner", opt:"kontenRelevan"},
+      {id:"akrilik_dinding", label:"Kondisi Akrilik Dinding", opt:"kontenRelevan"},
+      {id:"akrilik_meja", label:"Kondisi Akrilik Meja", opt:"kontenRelevan"}
+    ]},
+    { id:"stok", name:"Management Stok", items:[
+      {id:"stok_hp", label:"Stok Handphone", opt:"lengkap"},
+      {id:"stok_laptop", label:"Stok Laptop", opt:"lengkap"},
+      {id:"stok_aksesoris", label:"Stok Aksesoris", opt:"lengkap"},
+      {id:"total_hp", label:"Total Stok Handphone (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true},
+      {id:"total_laptop", label:"Total Stok Laptop (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true},
+      {id:"total_aksesoris", label:"Total Stok Aksesoris (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true},
+      {id:"total_sparepart", label:"Total Stok Sparepart (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true}
+    ]},
+    { id:"gadget_pending", name:"Gadget Pending", items:[
+      {id:"unit_dibawa", label:"Total Gadget Unit Dibawa (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true},
+      {id:"unit_ditinggal", label:"Total Gadget Unit Ditinggal (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true},
+      {id:"laptop_ditinggal", label:"Total Laptop Unit Ditinggal (Accurate & Rill)", opt:"sesuaiFisik", noEvidence:true}
+      // NB: the "sesuaiFisik" items in this category and in "stok" above have
+      // noEvidence:true — no per-item photo/note block, since it doesn't add value
+      // for a straight quantity reconciliation check.
+    ]},
+    { id:"uang", name:"Check Uang Masuk", items:[
+      {id:"cash", label:"Cek Uang Cash di Meja Admin (Accurate & Rill)", opt:"sesuai2"},
+      {id:"qris", label:"Cek QRIS di Merchant (Accurate & Rill)", opt:"sesuai2"},
+      {id:"edc", label:"Cek EDC (Accurate & Rill)", opt:"sesuai2"},
+      {id:"transfer", label:"Cek Transfer di Mutasi Rekening (Accurate & Rill)", opt:"sesuai2", noEvidence:true}
+    ]},
+    { id:"transaksi", name:"Check Transaksi & Harga", items:[
+      {id:"log", label:"Check Log Activities", opt:"logEdit", noEvidence:true},
+      {id:"harga_gadget", label:"Cek Harga Gadget di Pricetag", opt:"harga"},
+      {id:"harga_aksesoris", label:"Cek Harga Aksesoris di Pricetag", opt:"harga"},
+      {id:"harga_sparepart", label:"Cek Harga Sparepart di Accurate", opt:"harga"},
+      {id:"harga_jasa", label:"Cek Harga Jasa Teknisi di Accurate", opt:"harga", noEvidence:true}
+    ]}
+  ];
+
+  var BRANCHES = ["Bintara","Ceger","Cibinong","Cikampek","Cilangkap","Cileungsi","Cinere","Cimanggis","Condet","Dramaga","Jatiasih","Jatibening","Jatimulya","Jatiwaringin","Karawang","Klender","Pejaten","Radjiman","Sawangan","Warbong"];
+
+  var MIN_EXPECTED = 86;
+  // Photo-only "proof" items (Gadget Pending) are optional documentation — they never
+  // affect the score and are excluded from the required-items total below.
+  function scorableItems(cat){ return cat.items.filter(function(it){ return !it.proof; }); }
+  var TOTAL_ITEMS = CATEGORIES.reduce(function(n,c){ return n + scorableItems(c).length; },0);
+  function requiredAnsweredCount(){
+    var n = 0;
+    CATEGORIES.forEach(function(cat){
+      cat.items.forEach(function(it){
+        if (!it.proof && answers[cat.id+"."+it.id] !== undefined) n++;
+      });
+    });
+    return n;
+  }
+
+  /* ---------------- state ---------------- */
+  var answers = {}; // key -> {score, catId, label, value}
+  var photos = {}; // key -> [{catId, label, src}, ...]  — optional evidence photos per item (multiple allowed), doesn't affect score
+  var notes = {}; // key -> free-text note per item, typed by the Store Leader, doesn't affect score
+  var openCat = CATEGORIES[0].id;
+  var submissions = [];
+  var sb = null;
+  var SUPABASE_URL = "https://mlsrclpcommjawprryvg.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_FK6ZBGzoTujGvgO4II8l9g_muckFX-L";
+  var histOpen = {};
+  var ticketPhotoCache = {}; // submissionId -> [{label, src}] once fetched
+
+  function tier(score){ return score >= 10 ? "good" : (score > 0 ? "warn" : "bad"); }
+  function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+  /* Compress a photo client-side to a small JPEG data URL (~70KB) so it fits
+     comfortably inside a shared checklist document alongside the other answers. */
+  function compressImageFile(file, opts){
+    opts = opts || {};
+    var maxDim = opts.maxDim || 1000;
+    var targetBytes = opts.targetBytes || 70 * 1024;
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onerror = function(){ reject(new Error("read failed")); };
+      reader.onload = function(e){
+        var img = new Image();
+        img.onerror = function(){ reject(new Error("decode failed")); };
+        img.onload = function(){
+          try{
+            var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+            var scale = Math.min(1, maxDim / Math.max(w, h));
+            var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+            var canvas = document.createElement("canvas");
+            var ctx = canvas.getContext("2d");
+            var quality = 0.75;
+            function approxBytes(dataUrl){ var i = dataUrl.indexOf(","); return Math.round((dataUrl.length - i - 1) * 0.75); }
+            canvas.width = cw; canvas.height = ch;
+            ctx.drawImage(img, 0, 0, cw, ch);
+            var out = canvas.toDataURL("image/jpeg", quality);
+            var guard = 0;
+            while (approxBytes(out) > targetBytes && guard < 8){
+              if (quality > 0.4){
+                quality -= 0.12;
+              } else {
+                cw = Math.max(160, Math.round(cw * 0.82));
+                ch = Math.max(160, Math.round(ch * 0.82));
+                canvas.width = cw; canvas.height = ch;
+                ctx.drawImage(img, 0, 0, cw, ch);
+              }
+              out = canvas.toDataURL("image/jpeg", Math.max(quality, 0.4));
+              guard++;
+            }
+            resolve(out);
+          } catch(err){ reject(err); }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  var lightboxEl = document.getElementById("lightbox");
+  var lightboxImg = document.getElementById("lightboxImg");
+  function openLightbox(src){ lightboxImg.src = src; lightboxEl.classList.add("show"); }
+  lightboxEl.addEventListener("click", function(){ lightboxEl.classList.remove("show"); lightboxImg.src=""; });
+
+  /* ---------------- rendering: fields ---------------- */
+  var fCabang = document.getElementById("fCabang");
+  var fTanggal = document.getElementById("fTanggal");
+  var fLeader = document.getElementById("fLeader");
+  var histBranchFilter = document.getElementById("histBranchFilter");
+
+  BRANCHES.forEach(function(b){
+    var o1 = document.createElement("option"); o1.value=b; o1.textContent=b; fCabang.appendChild(o1);
+    var o2 = document.createElement("option"); o2.value=b; o2.textContent=b; histBranchFilter.appendChild(o2);
+  });
+  fTanggal.value = todayISO();
+
+  /* ---------------- accordion render ---------------- */
+  var accordionEl = document.getElementById("accordion");
+
+  function renderAccordion(){
+    accordionEl.innerHTML = CATEGORIES.map(function(cat, idx){
+      var scorable = scorableItems(cat);
+      var answeredInCat = scorable.filter(function(it){ return answers[cat.id+"."+it.id] !== undefined; }).length;
+      var scoreSum = cat.items.reduce(function(s,it){ var a=answers[cat.id+"."+it.id]; return s + (a?a.score:0); },0);
+      var isOpen = openCat === cat.id;
+      return (
+        '<div class="cat'+(isOpen?' open':'')+'" data-cat="'+cat.id+'">'+
+          '<button class="cat-head" type="button" data-toggle-cat="'+cat.id+'">'+
+            '<span class="cat-num">'+String(idx+1).padStart(2,"0")+'</span>'+
+            '<span class="cat-title"><span class="name">'+esc(cat.name)+'</span><span class="sub">'+answeredInCat+'/'+scorable.length+' item terisi</span></span>'+
+            '<span class="cat-score mono">'+scoreSum+'/'+(scorable.length*10)+'</span>'+
+            '<svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'+
+          '</button>'+
+          '<div class="cat-body">'+
+            cat.items.map(function(it){ return renderItem(cat, it); }).join("")+
+          '</div>'+
+        '</div>'
+      );
+    }).join("");
+    updateProgress();
+  }
+
+  function renderItem(cat, it){
+    var key = cat.id+"."+it.id;
+    var current = answers[key];
+    if (it.proof){
+      var hasPhoto = current && current.value;
+      return (
+        '<div class="item">'+
+          '<div class="item-label">'+esc(it.label)+'</div>'+
+          '<div class="photoRow">'+
+            (hasPhoto ?
+              '<div class="photoThumbWrap">'+
+                '<img class="photoThumb" data-zoom="'+key+'" src="'+current.value+'" alt="Bukti foto">'+
+                '<button type="button" class="photoRemove" data-photo-remove="'+key+'" aria-label="Hapus foto">&times;</button>'+
+              '</div>'
+            : '')+
+            '<label class="photoPick">'+
+              '<svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="1.6"/></svg>'+
+              (hasPhoto ? "Ganti foto" : "Ambil / unggah foto")+
+              '<input type="file" accept="image/*" capture="environment" data-photo-input="'+key+'" hidden>'+
+            '</label>'+
+            '<span class="photoNote">Opsional, tidak memengaruhi skor. Foto disimpan langsung ke riwayat (dikompres otomatis).</span>'+
+          '</div>'+
+        '</div>'
+      );
+    }
+    var options = OPT[it.opt];
+    var phList = photos[key] || [];
+    var EV_MIN_RECOMMENDED = 3;
+    return (
+      '<div class="item">'+
+        '<div class="item-label">'+esc(it.label)+'</div>'+
+        '<div class="options">'+
+          options.map(function(pair){
+            var label = pair[0], score = pair[1];
+            var pickedNow = current && current.value === label;
+            return '<button type="button" class="opt" data-picked="'+(pickedNow?1:0)+'" data-tier="'+tier(score)+'" data-pick="'+key+'" data-label="'+esc(label)+'" data-score="'+score+'">'+esc(label)+'</button>';
+          }).join("")+
+        '</div>'+
+        (it.noEvidence ? '' :
+          '<div class="evidence">'+
+            phList.map(function(p, idx){
+              return (
+                '<div class="evThumbWrap">'+
+                  '<img class="evThumb" data-zoom="1" src="'+p.src+'" alt="Bukti foto">'+
+                  '<button type="button" class="evRemove" data-ev-remove="'+key+'::'+idx+'" aria-label="Hapus foto">&times;</button>'+
+                '</div>'
+              );
+            }).join("")+
+            '<label class="evPick">'+
+              '<svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="1.6"/></svg>'+
+              (phList.length ? "Tambah foto lagi" : "Lampirkan foto bukti (opsional)")+
+              '<input type="file" accept="image/*" capture="environment" data-ev-input="'+key+'" hidden>'+
+            '</label>'+
+            '<span class="evNote">Opsional, tidak memengaruhi skor — disarankan minimal '+EV_MIN_RECOMMENDED+' foto sebagai bukti pendukung ('+phList.length+'/'+EV_MIN_RECOMMENDED+').</span>'+
+            '<input type="text" class="itemNoteInput" data-note-input="'+key+'" value="'+esc(notes[key]||"")+'" placeholder="Tambahkan catatan (opsional)...">'+
+          '</div>'
+        )+
+      '</div>'
+    );
+  }
+
+  accordionEl.addEventListener("click", function(e){
+    var toggleCat = e.target.closest("[data-toggle-cat]");
+    if (toggleCat){
+      var id = toggleCat.getAttribute("data-toggle-cat");
+      var wasOpen = openCat === id;
+      openCat = wasOpen ? null : id;
+      renderAccordion();
+      if (!wasOpen){
+        var newHead = accordionEl.querySelector('[data-toggle-cat="'+id+'"]');
+        if (newHead){
+          requestAnimationFrame(function(){
+            newHead.scrollIntoView({behavior:"smooth", block:"start"});
+          });
+        }
+      }
+      return;
+    }
+    var pickBtn = e.target.closest("[data-pick]");
+    if (pickBtn){
+      var key2 = pickBtn.getAttribute("data-pick");
+      var parts = key2.split(".");
+      answers[key2] = { catId:parts[0], label: pickBtn.getAttribute("data-label"), score: Number(pickBtn.getAttribute("data-score")), value: pickBtn.getAttribute("data-label") };
+      renderAccordion();
+      renderHero();
+      return;
+    }
+    var zoomImg = e.target.closest("[data-zoom]");
+    if (zoomImg){
+      openLightbox(zoomImg.getAttribute("src"));
+      return;
+    }
+    var removeBtn = e.target.closest("[data-photo-remove]");
+    if (removeBtn){
+      delete answers[removeBtn.getAttribute("data-photo-remove")];
+      renderAccordion();
+      renderHero();
+      return;
+    }
+    var evRemoveBtn = e.target.closest("[data-ev-remove]");
+    if (evRemoveBtn){
+      var evTarget = evRemoveBtn.getAttribute("data-ev-remove").split("::");
+      var evKey = evTarget[0], evIdx = Number(evTarget[1]);
+      if (photos[evKey]){
+        photos[evKey].splice(evIdx, 1);
+        if (!photos[evKey].length) delete photos[evKey];
+      }
+      renderAccordion();
+    }
+  });
+  // Separate listener (not re-rendering the accordion) so typing in a note field never
+  // loses focus/cursor position — a full renderAccordion() on every keystroke would rebuild
+  // the DOM and kick the user out of the input mid-word.
+  accordionEl.addEventListener("input", function(e){
+    var t = e.target;
+    if (t.matches("[data-note-input]")){
+      notes[t.getAttribute("data-note-input")] = t.value;
+    }
+  });
+  accordionEl.addEventListener("change", function(e){
+    var t = e.target;
+    if (t.matches("[data-photo-input]") && t.files && t.files[0]){
+      var key3 = t.getAttribute("data-photo-input");
+      var parts3 = key3.split(".");
+      compressImageFile(t.files[0]).then(function(dataUrl){
+        answers[key3] = { catId:parts3[0], label:"Bukti foto diunggah", score:0, value: dataUrl };
+        renderAccordion();
+        renderHero();
+      }).catch(function(){
+        toast("Gagal memproses foto, coba lagi.");
+      });
+    }
+    if (t.matches("[data-ev-input]") && t.files && t.files[0]){
+      var key5 = t.getAttribute("data-ev-input");
+      var cat5 = key5.split(".")[0];
+      var item5 = CATEGORIES.find(function(c){ return c.id===cat5; });
+      var itemDef = item5 && item5.items.find(function(i){ return cat5+"."+i.id === key5; });
+      compressImageFile(t.files[0], { maxDim:800, targetBytes:40*1024 }).then(function(dataUrl){
+        if (!photos[key5]) photos[key5] = [];
+        photos[key5].push({ catId: cat5, label: itemDef ? itemDef.label : key5, src: dataUrl });
+        renderAccordion();
+      }).catch(function(){
+        toast("Gagal memproses foto, coba lagi.");
+      });
+    }
+  });
+
+  /* ---------------- hero + progress ---------------- */
+  var heroScore = document.getElementById("heroScore");
+  var heroBar = document.getElementById("heroBar");
+  var heroNote = document.getElementById("heroNote");
+  var heroPill = document.getElementById("heroPill");
+  var progressText = document.getElementById("progressText");
+  var saveBtn = document.getElementById("saveBtn");
+
+  function currentPercent(){
+    var keys = Object.keys(answers);
+    if (!keys.length) return 0;
+    var sum = keys.reduce(function(s,k){ return s + answers[k].score; },0);
+    return (sum / (TOTAL_ITEMS*10)) * 100;
+  }
+
+  function renderHero(){
+    var pct = currentPercent();
+    heroScore.textContent = pct.toFixed(1);
+    heroBar.style.width = Math.min(100,pct)+"%";
+    var answered = requiredAnsweredCount();
+    if (!answered){
+      heroNote.textContent = "Belum ada item yang dinilai.";
+      heroPill.className = "pill"; heroPill.textContent="";
+    } else if (answered < TOTAL_ITEMS){
+      heroNote.textContent = (TOTAL_ITEMS - answered)+" item lagi belum dinilai.";
+      heroPill.className = "pill warn"; heroPill.textContent="Belum lengkap";
+    } else if (pct >= MIN_EXPECTED){
+      heroNote.textContent = "Di atas skor minimum ("+MIN_EXPECTED.toFixed(2)+").";
+      heroPill.className = "pill good"; heroPill.textContent="Memenuhi target";
+    } else {
+      heroNote.textContent = "Di bawah skor minimum ("+MIN_EXPECTED.toFixed(2)+").";
+      heroPill.className = "pill bad"; heroPill.textContent="Di bawah target";
+    }
+  }
+
+  function updateProgress(){
+    var answered = requiredAnsweredCount();
+    progressText.innerHTML = "<strong>"+answered+"</strong> / "+TOTAL_ITEMS+" item terisi";
+    var formOk = fCabang.value && fTanggal.value && fLeader.value.trim();
+    saveBtn.disabled = !(formOk && answered === TOTAL_ITEMS);
+  }
+  [fCabang, fTanggal, fLeader].forEach(function(el){ el.addEventListener("input", updateProgress); el.addEventListener("change", updateProgress); });
+
+  /* ---------------- tabs ---------------- */
+  var tabFillBtn = document.getElementById("tabFillBtn");
+  var tabHistBtn = document.getElementById("tabHistBtn");
+  var viewFill = document.getElementById("viewFill");
+  var viewHist = document.getElementById("viewHist");
+  function showTab(which){
+    var fill = which === "fill";
+    viewFill.style.display = fill ? "" : "none";
+    viewHist.style.display = fill ? "none" : "";
+    tabFillBtn.setAttribute("aria-selected", fill ? "true":"false");
+    tabHistBtn.setAttribute("aria-selected", fill ? "false":"true");
+    document.querySelector(".actionbar").style.display = fill ? "" : "none";
+  }
+  tabFillBtn.addEventListener("click", function(){ showTab("fill"); });
+  tabHistBtn.addEventListener("click", function(){ showTab("hist"); });
+
+  /* ---------------- reset / save ---------------- */
+  function resetForm(){
+    answers = {};
+    photos = {};
+    notes = {};
+    openCat = CATEGORIES[0].id;
+    fLeader.value = "";
+    fTanggal.value = todayISO();
+    renderAccordion();
+    renderHero();
+  }
+  document.getElementById("resetBtn").addEventListener("click", resetForm);
+
+  var toastEl = document.getElementById("toast");
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    setTimeout(function(){ toastEl.classList.remove("show"); }, 2600);
+  }
+
+  document.getElementById("saveBtn").addEventListener("click", function(){
+    var pct = currentPercent();
+    // One entry per photo (an item key repeats if it has more than one photo attached),
+    // so photoKeys.length always reflects the true total photo count.
+    var photoKeys = [];
+    Object.keys(photos).forEach(function(k){ (photos[k]||[]).forEach(function(){ photoKeys.push(k); }); });
+    // Free-text notes ride along inside the same "answers" jsonb blob under a reserved key
+    // (no dot in it, so it can never collide with a real "catId.itemId" answer key) — this
+    // avoids needing a separate database column/migration just for notes.
+    var notesSnapshot = Object.assign({}, notes);
+    var record = {
+      branch: fCabang.value,
+      date: fTanggal.value,
+      leader: fLeader.value.trim(),
+      answers: Object.assign({}, answers, { _meta_notes: notesSnapshot }),
+      notes: notesSnapshot,
+      percent: Math.round(pct*100)/100,
+      minExpected: MIN_EXPECTED,
+      totalItems: TOTAL_ITEMS,
+      photoKeys: photoKeys,
+      submittedAt: new Date().toISOString()
+    };
+    var photosSnapshot = Object.assign({}, photos);
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Menyimpan...";
+    var finish = function(ok){
+      saveBtn.textContent = "Simpan Ceklis";
+      if (ok){
+        toast("Ceklis "+record.branch+" tersimpan"+(photoKeys.length?" ("+photoKeys.length+" foto bukti)":"")+".");
+        resetForm();
+        showTab("hist");
+      } else {
+        toast("Gagal menyimpan. Coba lagi.");
+        updateProgress();
+      }
+    };
+    if (sb){
+      var dbRow = {
+        branch: record.branch,
+        visit_date: record.date,
+        leader: record.leader,
+        answers: record.answers,
+        percent: record.percent,
+        min_expected: record.minExpected,
+        total_items: record.totalItems,
+        photo_keys: photoKeys,
+        submitted_at: record.submittedAt
+      };
+      sb.from("submissions").insert(dbRow).select().single().then(function(res){
+        if (res.error) throw res.error;
+        var subId = res.data.id;
+        if (!photoKeys.length) return;
+        var photoRows = [];
+        Object.keys(photosSnapshot).forEach(function(k){
+          (photosSnapshot[k]||[]).forEach(function(p){
+            photoRows.push({ submission_id: subId, item_key: k, cat_id: p.catId, label: p.label, src: p.src });
+          });
+        });
+        return sb.from("submission_photos").insert(photoRows).then(function(r2){ if (r2.error) throw r2.error; });
+      }).then(function(){ finish(true); fetchSubmissions(); }).catch(function(){ finish(false); });
+    } else {
+      submissions.unshift(Object.assign({id:"local-"+Date.now(), _localPhotos: photosSnapshot}, record));
+      renderHistory();
+      finish(true);
+    }
+  });
+
+  /* ---------------- history ---------------- */
+  var histList = document.getElementById("histList");
+  var histCount = document.getElementById("histCount");
+  var dbHint = document.getElementById("dbHint");
+
+  function scoreTier(pct){ return pct >= MIN_EXPECTED ? "good" : (pct >= MIN_EXPECTED-15 ? "warn" : "bad"); }
+
+  function renderHistory(){
+    var filterBranch = histBranchFilter.value;
+    var rows = submissions.filter(function(s){ return !filterBranch || s.branch === filterBranch; });
+    histCount.textContent = submissions.length;
+    if (!rows.length){
+      histList.innerHTML = '<div class="empty">Belum ada ceklis tersimpan'+(filterBranch?(" untuk cabang "+esc(filterBranch)):"")+'.</div>';
+      return;
+    }
+    histList.innerHTML = rows.map(function(s){
+      var isOpen = !!histOpen[s.id];
+      var catSubtotals = CATEGORIES.map(function(cat){
+        var sum = cat.items.reduce(function(acc,it){ var a=s.answers[cat.id+"."+it.id]; return acc + (a?a.score:0); },0);
+        return '<div class="subrow"><span>'+esc(cat.name)+'</span><span>'+sum+'/'+(scorableItems(cat).length*10)+'</span></div>';
+      }).join("");
+      // Photos embedded directly on the submission (the two dedicated Gadget Pending proof shots).
+      var photoItems = [];
+      CATEGORIES.forEach(function(cat){
+        cat.items.forEach(function(it){
+          if (it.proof){
+            var a = s.answers[cat.id+"."+it.id];
+            if (a && a.value) photoItems.push({ label: it.label, src: a.value });
+          }
+        });
+      });
+      // Per-item evidence photos: embedded locally in preview mode, or fetched lazily from the
+      // "photos" subcollection (see toggle handler below) once this ticket has been opened.
+      var evidenceCount = (s.photoKeys && s.photoKeys.length) || 0;
+      var totalPhotoCount = photoItems.length + evidenceCount;
+      if (s._localPhotos){
+        Object.keys(s._localPhotos).forEach(function(k){ photoItems = photoItems.concat(s._localPhotos[k] || []); });
+      } else if (ticketPhotoCache[s.id]){
+        photoItems = photoItems.concat(ticketPhotoCache[s.id]);
+      }
+      var photosHtml = photoItems.length ? (
+        '<div class="photoStrip">'+
+          photoItems.map(function(p){
+            return '<div class="photoStripItem"><img src="'+p.src+'" data-zoom-src="1" alt="'+esc(p.label)+'"><span>'+esc(p.label)+'</span></div>';
+          }).join("")+
+        '</div>'
+      ) : (evidenceCount && isOpen ? '<div class="photoLoading">Memuat foto…</div>' : "");
+      var badgeHtml = totalPhotoCount ? (
+        '<span class="photoBadge"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="1.6"/></svg>'+totalPhotoCount+'</span>'
+      ) : "";
+      // Free-text notes the Store Leader typed per item (stored inline in the answers jsonb).
+      var noteEntries = [];
+      CATEGORIES.forEach(function(cat){
+        cat.items.forEach(function(it){
+          if (it.proof) return;
+          var n = (s.notes && s.notes[cat.id+"."+it.id]) || "";
+          if (n.trim()) noteEntries.push({ label: it.label, text: n.trim() });
+        });
+      });
+      var notesHtml = noteEntries.length ? (
+        '<div class="notesBlock">'+
+          noteEntries.map(function(n){ return '<div class="noteRow"><strong>'+esc(n.label)+':</strong> '+esc(n.text)+'</div>'; }).join("")+
+        '</div>'
+      ) : "";
+      return (
+        '<div class="ticket'+(isOpen?' open':'')+'" data-ticket="'+s.id+'">'+
+          '<div class="ticket-head" data-toggle-ticket="'+s.id+'">'+
+            '<span class="ticket-branch">'+esc(s.branch)+'</span>'+
+            '<span class="ticket-date mono">'+esc(s.date)+'</span>'+
+            '<span class="ticket-leader">'+esc(s.leader||"")+'</span>'+
+            badgeHtml+
+            '<span class="pill '+scoreTier(s.percent)+'">'+s.percent.toFixed(1)+'</span>'+
+            '<button type="button" class="ticketDelete" data-delete-ticket="'+s.id+'" aria-label="Hapus riwayat ini" title="Hapus riwayat ini">'+
+              '<svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'+
+            '</button>'+
+          '</div>'+
+          '<div class="ticket-body"><div class="subgrid">'+catSubtotals+'</div>'+photosHtml+notesHtml+'</div>'+
+        '</div>'
+      );
+    }).join("");
+  }
+  histBranchFilter.addEventListener("change", renderHistory);
+  function deleteSubmission(id){
+    if (sb){
+      // submission_photos rows cascade-delete with the parent, but this table also has
+      // its own anon delete policy, so deleting it explicitly first is harmless either way.
+      sb.from("submission_photos").delete().eq("submission_id", id).then(function(){
+        return sb.from("submissions").delete().eq("id", id);
+      }).then(function(res){
+        if (res && res.error) throw res.error;
+        delete ticketPhotoCache[id];
+        delete histOpen[id];
+        toast("Riwayat dihapus.");
+        fetchSubmissions();
+      }).catch(function(){
+        toast("Gagal menghapus riwayat. Coba lagi.");
+      });
+    } else {
+      submissions = submissions.filter(function(s){ return s.id !== id; });
+      delete ticketPhotoCache[id];
+      delete histOpen[id];
+      toast("Riwayat dihapus.");
+      renderHistory();
+    }
+  }
+
+  histList.addEventListener("click", function(e){
+    var zoomImg = e.target.closest("[data-zoom-src]");
+    if (zoomImg){
+      openLightbox(zoomImg.getAttribute("src"));
+      return;
+    }
+    var delBtn = e.target.closest("[data-delete-ticket]");
+    if (delBtn){
+      var delId = delBtn.getAttribute("data-delete-ticket");
+      var sub0 = submissions.find(function(s){ return s.id === delId; });
+      var label0 = sub0 ? (sub0.branch+" ("+sub0.date+")") : "ceklis ini";
+      if (window.confirm("Hapus riwayat "+label0+"? Tindakan ini tidak bisa dibatalkan.")){
+        deleteSubmission(delId);
+      }
+      return;
+    }
+    var t = e.target.closest("[data-toggle-ticket]");
+    if (t){
+      var id = t.getAttribute("data-toggle-ticket");
+      histOpen[id] = !histOpen[id];
+      renderHistory();
+      if (histOpen[id] && sb && !ticketPhotoCache[id]){
+        var sub = submissions.find(function(s){ return s.id === id; });
+        if (sub && sub.photoKeys && sub.photoKeys.length){
+          sb.from("submission_photos").select("*").eq("submission_id", id).then(function(res){
+            ticketPhotoCache[id] = (res.data || []).map(function(row){ return { label: row.label, src: row.src }; });
+            renderHistory();
+          }).catch(function(){
+            ticketPhotoCache[id] = [];
+            renderHistory();
+          });
+        }
+      }
+    }
+  });
+
+  /* ---------------- db wiring (Supabase) ---------------- */
+  function rowToSubmission(row){
+    var rawAnswers = row.answers || {};
+    return {
+      id: row.id,
+      branch: row.branch,
+      date: row.visit_date,
+      leader: row.leader,
+      answers: rawAnswers,
+      notes: rawAnswers._meta_notes || {},
+      percent: Number(row.percent),
+      minExpected: Number(row.min_expected),
+      totalItems: row.total_items,
+      photoKeys: row.photo_keys || [],
+      submittedAt: row.submitted_at
+    };
+  }
+
+  function fetchSubmissions(){
+    if (!sb) return;
+    sb.from("submissions").select("*").order("submitted_at",{ascending:false}).limit(300).then(function(res){
+      if (res.error){ dbHint.textContent = "Riwayat gagal dimuat."; return; }
+      submissions = res.data.map(rowToSubmission);
+      renderHistory();
+    }).catch(function(){
+      dbHint.textContent = "Riwayat gagal dimuat.";
+    });
+  }
+
+  function initDb(){
+    if (!window.supabase || !window.supabase.createClient){
+      dbHint.textContent = "Mode pratinjau lokal — riwayat tidak dibagikan antar perangkat.";
+      return;
+    }
+    try{
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch(err){
+      dbHint.textContent = "Mode pratinjau lokal — riwayat tidak dibagikan antar perangkat.";
+      return;
+    }
+    dbHint.textContent = "Tersinkron otomatis untuk semua cabang.";
+    fetchSubmissions();
+    sb.channel("submissions-live")
+      .on("postgres_changes", { event:"*", schema:"public", table:"submissions" }, function(){ fetchSubmissions(); })
+      .subscribe();
+  }
+
+  /* ---------------- init ---------------- */
+  renderAccordion();
+  renderHero();
+  renderHistory();
+  updateProgress();
+  initDb();
+
+  // Register the service worker so this page qualifies as an installable PWA
+  // (needed for PWABuilder / Trusted Web Activity to package it as an Android app).
+  if ("serviceWorker" in navigator){
+    navigator.serviceWorker.register("sw.js").catch(function(){ /* non-fatal */ });
+  }
+})();
+</script>
+</body>
+</html>
