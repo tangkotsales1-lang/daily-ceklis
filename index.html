@@ -133,6 +133,18 @@
   }
   .field select:focus, .field input:focus{outline:2px solid var(--accent); outline-offset:1px;}
 
+  /* ---- draft resume banner ---- */
+  .draftBanner{
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    background:var(--accent-tint); border:1px solid var(--accent); border-radius:12px;
+    padding:12px 16px; margin:2px 0 16px;
+  }
+  .draftBanner-text{display:flex; flex-direction:column; gap:2px; min-width:180px;}
+  .draftBanner-text strong{font-size:14px; color:var(--accent-ink);}
+  .draftBanner-text span{font-size:12.5px; color:var(--accent-ink); opacity:.85;}
+  .draftBanner-actions{display:flex; gap:8px; flex:none;}
+  .draftBanner-actions .btn{padding:8px 14px; font-size:13.5px;}
+
   /* ---- hero score ---- */
   .hero{
     display:flex; align-items:center; gap:18px; background:var(--surface);
@@ -323,6 +335,16 @@
 
   <!-- FILL TAB -->
   <div id="viewFill">
+    <div class="draftBanner" id="draftBanner" style="display:none;">
+      <div class="draftBanner-text">
+        <strong>Ceklis belum selesai ditemukan</strong>
+        <span id="draftBannerDetail"></span>
+      </div>
+      <div class="draftBanner-actions">
+        <button type="button" class="btn btn-ghost" id="draftDismissBtn">Mulai Baru</button>
+        <button type="button" class="btn btn-primary" id="draftResumeBtn">Lanjutkan</button>
+      </div>
+    </div>
     <div class="fieldrow">
       <div class="field">
         <label for="fCabang">Cabang</label>
@@ -481,6 +503,106 @@
   var SUPABASE_KEY = "sb_publishable_FK6ZBGzoTujGvgO4II8l9g_muckFX-L";
   var histOpen = {};
   var ticketPhotoCache = {}; // submissionId -> [{label, src}] once fetched
+
+  /* ---------------- draft autosave (resume unfinished checklist) ----------------
+     Every change to the in-progress form is mirrored into localStorage on this
+     device, so if the app is closed (or the phone locks/crashes) mid-visit, the
+     next time it's opened the Store Leader is offered their unfinished checklist
+     back instead of starting over. This never touches Supabase — it's purely a
+     local safety net for one device, cleared as soon as the checklist is actually
+     submitted or the person explicitly starts fresh. */
+  var DRAFT_KEY = "ceklisDraftV1";
+  var draftSaveTimer = null;
+  var suppressDraftSave = false; // true while we're restoring a draft, so restoring doesn't immediately re-save itself
+
+  function serializeDraft(){
+    return {
+      branch: fCabang.value,
+      date: fTanggal.value,
+      leader: fLeader.value,
+      answers: answers,
+      photos: photos,
+      notes: notes,
+      openCat: openCat,
+      savedAt: Date.now()
+    };
+  }
+  function saveDraftNow(){
+    if (suppressDraftSave) return;
+    try{ localStorage.setItem(DRAFT_KEY, JSON.stringify(serializeDraft())); }
+    catch(e){ /* storage full or unavailable — non-fatal, just skip this autosave */ }
+  }
+  function scheduleDraftSave(){
+    // If a "ceklis belum selesai" banner is showing and the person just goes ahead and
+    // edits the form directly (instead of tapping Lanjutkan/Mulai Baru), treat that as an
+    // implicit "start new" for the banner's sake — hide it so it doesn't linger stale.
+    if (draftBannerEl && draftBannerEl.style.display !== "none" && !suppressDraftSave){
+      draftBannerEl.style.display = "none";
+      pendingDraft = null;
+    }
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(saveDraftNow, 400);
+  }
+  function loadDraft(){
+    try{
+      var raw = localStorage.getItem(DRAFT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(e){ return null; }
+  }
+  function clearDraft(){
+    clearTimeout(draftSaveTimer);
+    try{ localStorage.removeItem(DRAFT_KEY); } catch(e){ /* ignore */ }
+  }
+  function draftHasProgress(d){
+    if (!d) return false;
+    var hasAnswer = d.answers && Object.keys(d.answers).length > 0;
+    var hasLeader = d.leader && d.leader.trim();
+    var hasPhotos = d.photos && Object.keys(d.photos).length > 0;
+    var hasNotes = d.notes && Object.keys(d.notes).some(function(k){ return (d.notes[k]||"").trim(); });
+    return !!(hasAnswer || hasLeader || hasPhotos || hasNotes);
+  }
+  function formatDraftTime(ts){
+    if (!ts) return "";
+    var d = new Date(ts);
+    return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  }
+
+  var draftBannerEl = document.getElementById("draftBanner");
+  var draftBannerDetail = document.getElementById("draftBannerDetail");
+  var draftResumeBtn = document.getElementById("draftResumeBtn");
+  var draftDismissBtn = document.getElementById("draftDismissBtn");
+  var pendingDraft = null;
+
+  function checkForDraft(){
+    var d = loadDraft();
+    if (!draftHasProgress(d)){ if (d) clearDraft(); return; }
+    pendingDraft = d;
+    var answeredCount = Object.keys(d.answers||{}).filter(function(k){ return k !== "_meta_notes"; }).length;
+    draftBannerDetail.textContent = (d.branch || "Cabang belum dipilih")+" · "+(d.date||"")+(d.leader?(" · "+d.leader):"")+" · "+answeredCount+" item terisi · tersimpan "+formatDraftTime(d.savedAt);
+    draftBannerEl.style.display = "";
+  }
+  draftResumeBtn.addEventListener("click", function(){
+    if (!pendingDraft) return;
+    suppressDraftSave = true;
+    answers = pendingDraft.answers || {};
+    photos = pendingDraft.photos || {};
+    notes = pendingDraft.notes || {};
+    openCat = pendingDraft.openCat || CATEGORIES[0].id;
+    fCabang.value = pendingDraft.branch || "";
+    fTanggal.value = pendingDraft.date || todayISO();
+    fLeader.value = pendingDraft.leader || "";
+    draftBannerEl.style.display = "none";
+    renderAccordion();
+    renderHero();
+    updateProgress();
+    suppressDraftSave = false;
+    toast("Melanjutkan ceklis sebelumnya.");
+  });
+  draftDismissBtn.addEventListener("click", function(){
+    clearDraft();
+    pendingDraft = null;
+    draftBannerEl.style.display = "none";
+  });
 
   function tier(score){ return score >= 10 ? "good" : (score > 0 ? "warn" : "bad"); }
   function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -660,6 +782,7 @@
       answers[key2] = { catId:parts[0], label: pickBtn.getAttribute("data-label"), score: Number(pickBtn.getAttribute("data-score")), value: pickBtn.getAttribute("data-label") };
       renderAccordion();
       renderHero();
+      scheduleDraftSave();
       return;
     }
     var zoomImg = e.target.closest("[data-zoom]");
@@ -672,6 +795,7 @@
       delete answers[removeBtn.getAttribute("data-photo-remove")];
       renderAccordion();
       renderHero();
+      scheduleDraftSave();
       return;
     }
     var evRemoveBtn = e.target.closest("[data-ev-remove]");
@@ -683,6 +807,7 @@
         if (!photos[evKey].length) delete photos[evKey];
       }
       renderAccordion();
+      scheduleDraftSave();
     }
   });
   // Separate listener (not re-rendering the accordion) so typing in a note field never
@@ -692,6 +817,7 @@
     var t = e.target;
     if (t.matches("[data-note-input]")){
       notes[t.getAttribute("data-note-input")] = t.value;
+      scheduleDraftSave();
     }
   });
   accordionEl.addEventListener("change", function(e){
@@ -703,6 +829,7 @@
         answers[key3] = { catId:parts3[0], label:"Bukti foto diunggah", score:0, value: dataUrl };
         renderAccordion();
         renderHero();
+        scheduleDraftSave();
       }).catch(function(){
         toast("Gagal memproses foto, coba lagi.");
       });
@@ -716,6 +843,7 @@
         if (!photos[key5]) photos[key5] = [];
         photos[key5].push({ catId: cat5, label: itemDef ? itemDef.label : key5, src: dataUrl });
         renderAccordion();
+        scheduleDraftSave();
       }).catch(function(){
         toast("Gagal memproses foto, coba lagi.");
       });
@@ -763,7 +891,10 @@
     var formOk = fCabang.value && fTanggal.value && fLeader.value.trim();
     saveBtn.disabled = !(formOk && answered === TOTAL_ITEMS);
   }
-  [fCabang, fTanggal, fLeader].forEach(function(el){ el.addEventListener("input", updateProgress); el.addEventListener("change", updateProgress); });
+  [fCabang, fTanggal, fLeader].forEach(function(el){
+    el.addEventListener("input", function(){ updateProgress(); scheduleDraftSave(); });
+    el.addEventListener("change", function(){ updateProgress(); scheduleDraftSave(); });
+  });
 
   /* ---------------- tabs ---------------- */
   var tabFillBtn = document.getElementById("tabFillBtn");
@@ -783,6 +914,9 @@
 
   /* ---------------- reset / save ---------------- */
   function resetForm(){
+    clearDraft();
+    pendingDraft = null;
+    draftBannerEl.style.display = "none";
     answers = {};
     photos = {};
     notes = {};
@@ -1062,6 +1196,7 @@
   renderHero();
   renderHistory();
   updateProgress();
+  checkForDraft();
   initDb();
 
   // Register the service worker so this page qualifies as an installable PWA
