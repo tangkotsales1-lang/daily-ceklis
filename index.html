@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ceklis Harian Store Leader</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#FF7A1A">
+<meta name="theme-color" content="#150E33">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,65 +16,74 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
-    --ink:#12182B;
-    --ink-soft:#4B5468;
-    --paper:#EEF1F6;
-    --surface:#FFFFFF;
-    --surface-2:#E4E9F2;
-    --line:#D6DCE7;
+    --ink:#EEF1FC;
+    --ink-soft:#9BA3C7;
+    --paper:#0A0D22;
+    --surface:#171A38;
+    --surface-2:#1F2447;
+    --line:#2E3363;
     --accent:#FF7A1A;
-    --accent-ink:#7A2E00;
-    --accent-tint:#FFE7D3;
-    --good:#16825D;
-    --good-bg:#DDF3E9;
-    --warn:#B9770E;
-    --warn-bg:#FBEBCF;
-    --bad:#C0342A;
-    --bad-bg:#FBE1DE;
-    --shadow:0 1px 2px rgba(18,24,43,.06), 0 8px 24px -12px rgba(18,24,43,.18);
+    --accent-ink:#FFD3AD;
+    --accent-tint:rgba(255,122,26,.18);
+    --good:#2DD4BF;
+    --good-bg:rgba(45,212,191,.16);
+    --warn:#FFB020;
+    --warn-bg:rgba(255,176,32,.16);
+    --bad:#FF4D6A;
+    --bad-bg:rgba(255,77,106,.16);
+    --c1:#4C8DFF;
+    --c2:#9B6BFF;
+    --c3:#2DD4BF;
+    --c4:#FF7A1A;
+    --c5:#FF4D6A;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 32px -12px rgba(76,60,190,.5);
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --ink:#EAEDF4;
-      --ink-soft:#A6AFC4;
-      --paper:#0C1220;
-      --surface:#141B2C;
-      --surface-2:#1B2338;
-      --line:#2A3350;
-      --accent:#FF8A3D;
-      --accent-ink:#FFDCBB;
-      --accent-tint:#3A2412;
-      --good:#3FCB92;
-      --good-bg:#12301F;
-      --warn:#F0B429;
-      --warn-bg:#332508;
-      --bad:#FF6B5E;
-      --bad-bg:#341311;
-      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+      --ink:#EEF1FC;
+      --ink-soft:#9BA3C7;
+      --paper:#0A0D22;
+      --surface:#171A38;
+      --surface-2:#1F2447;
+      --line:#2E3363;
+      --accent:#FF7A1A;
+      --accent-ink:#FFD3AD;
+      --accent-tint:rgba(255,122,26,.18);
+      --good:#2DD4BF;
+      --good-bg:rgba(45,212,191,.16);
+      --warn:#FFB020;
+      --warn-bg:rgba(255,176,32,.16);
+      --bad:#FF4D6A;
+      --bad-bg:rgba(255,77,106,.16);
+      --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 32px -12px rgba(76,60,190,.5);
     }
   }
   :root[data-theme="dark"]{
-    --ink:#EAEDF4;
-    --ink-soft:#A6AFC4;
-    --paper:#0C1220;
-    --surface:#141B2C;
-    --surface-2:#1B2338;
-    --line:#2A3350;
-    --accent:#FF8A3D;
-    --accent-ink:#FFDCBB;
-    --accent-tint:#3A2412;
-    --good:#3FCB92;
-    --good-bg:#12301F;
-    --warn:#F0B429;
-    --warn-bg:#332508;
-    --bad:#FF6B5E;
-    --bad-bg:#341311;
-    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    --ink:#EEF1FC;
+    --ink-soft:#9BA3C7;
+    --paper:#0A0D22;
+    --surface:#171A38;
+    --surface-2:#1F2447;
+    --line:#2E3363;
+    --accent:#FF7A1A;
+    --accent-ink:#FFD3AD;
+    --accent-tint:rgba(255,122,26,.18);
+    --good:#2DD4BF;
+    --good-bg:rgba(45,212,191,.16);
+    --warn:#FFB020;
+    --warn-bg:rgba(255,176,32,.16);
+    --bad:#FF4D6A;
+    --bad-bg:rgba(255,77,106,.16);
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 32px -12px rgba(76,60,190,.5);
   }
 
   *{box-sizing:border-box;}
   body{
-    background:var(--paper);
+    background:
+      radial-gradient(circle at 12% -8%, rgba(155,107,255,.35) 0%, transparent 42%),
+      radial-gradient(circle at 100% 0%, rgba(76,141,255,.28) 0%, transparent 40%),
+      linear-gradient(165deg, #0A0D22 0%, #150E33 55%, #1A0F2E 100%);
+    background-attachment:fixed;
     color:var(--ink);
     font-family:"Source Sans 3",system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;
@@ -101,7 +110,7 @@
   .brandrow{display:flex; align-items:center; gap:12px; padding:16px 0 12px;}
   .brandmark{
     width:38px; height:38px; border-radius:10px; flex:none;
-    background:linear-gradient(155deg, var(--accent), #C4470C);
+    background:linear-gradient(155deg, var(--c1), var(--c2));
     display:flex; align-items:center; justify-content:center;
     box-shadow:var(--shadow);
   }
@@ -149,13 +158,19 @@
   .hero{
     display:flex; align-items:center; gap:18px; background:var(--surface);
     border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin-bottom:18px;
-    box-shadow:var(--shadow);
+    box-shadow:var(--shadow); transition:border-color .25s, box-shadow .25s;
   }
-  .hero-score{font-family:"IBM Plex Mono"; font-weight:600; font-size:40px; line-height:1; flex:none; font-variant-numeric:tabular-nums;}
+  .hero-good{border-color:var(--good); box-shadow:var(--shadow), 0 0 0 1px rgba(45,212,191,.25), 0 0 26px -6px rgba(45,212,191,.55);}
+  .hero-warn{border-color:var(--warn); box-shadow:var(--shadow), 0 0 0 1px rgba(255,176,32,.25), 0 0 26px -6px rgba(255,176,32,.5);}
+  .hero-bad{border-color:var(--bad); box-shadow:var(--shadow), 0 0 0 1px rgba(255,77,106,.28), 0 0 26px -6px rgba(255,77,106,.55);}
+  .hero-score{font-family:"IBM Plex Mono"; font-weight:600; font-size:40px; line-height:1; flex:none; font-variant-numeric:tabular-nums; transition:color .25s;}
+  .hero-good .hero-score{color:var(--good);}
+  .hero-warn .hero-score{color:var(--warn);}
+  .hero-bad .hero-score{color:var(--bad);}
   .hero-mid{flex:1; min-width:0;}
   .hero-mid .label{font-size:12.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;}
   .barTrack{height:8px; border-radius:99px; background:var(--surface-2); overflow:hidden;}
-  .barFill{height:100%; border-radius:99px; background:var(--accent); transition:width .4s ease;}
+  .barFill{height:100%; border-radius:99px; background:linear-gradient(90deg, var(--c1), var(--c2), var(--accent)); transition:width .4s ease;}
   .hero-note{font-size:12.5px; color:var(--ink-soft); margin-top:6px;}
   .pill{
     display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:99px;
@@ -167,7 +182,12 @@
   .pill svg{width:13px; height:13px;}
 
   /* ---- accordion ---- */
-  .cat{background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:10px; overflow:hidden; box-shadow:var(--shadow);}
+  .cat{background:var(--surface); border:1px solid var(--line); border-top:3px solid var(--line); border-radius:14px; margin-bottom:10px; overflow:hidden; box-shadow:var(--shadow);}
+  .cat:nth-of-type(5n+1){border-top-color:var(--c1);}
+  .cat:nth-of-type(5n+2){border-top-color:var(--c2);}
+  .cat:nth-of-type(5n+3){border-top-color:var(--c3);}
+  .cat:nth-of-type(5n+4){border-top-color:var(--c4);}
+  .cat:nth-of-type(5n+5){border-top-color:var(--c5);}
   .cat-head{
     display:flex; align-items:center; gap:12px; width:100%; padding:14px 16px; cursor:pointer;
     background:none; border:none; text-align:left; color:inherit;
@@ -176,6 +196,11 @@
     flex:none; width:26px; height:26px; border-radius:8px; background:var(--surface-2);
     display:flex; align-items:center; justify-content:center; font-family:"IBM Plex Mono"; font-size:13px; font-weight:600; color:var(--ink-soft);
   }
+  .cat:nth-of-type(5n+1) .cat-num{background:rgba(76,141,255,.18); color:var(--c1);}
+  .cat:nth-of-type(5n+2) .cat-num{background:rgba(155,107,255,.18); color:var(--c2);}
+  .cat:nth-of-type(5n+3) .cat-num{background:rgba(45,212,191,.18); color:var(--c3);}
+  .cat:nth-of-type(5n+4) .cat-num{background:rgba(255,122,26,.18); color:var(--c4);}
+  .cat:nth-of-type(5n+5) .cat-num{background:rgba(255,77,106,.18); color:var(--c5);}
   .cat-title{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
   .cat-title .name{font-size:17px; font-weight:600;}
   .cat-title .sub{font-size:12px; color:var(--ink-soft);}
@@ -851,6 +876,7 @@
   });
 
   /* ---------------- hero + progress ---------------- */
+  var heroEl = document.querySelector(".hero");
   var heroScore = document.getElementById("heroScore");
   var heroBar = document.getElementById("heroBar");
   var heroNote = document.getElementById("heroNote");
@@ -873,15 +899,19 @@
     if (!answered){
       heroNote.textContent = "Belum ada item yang dinilai.";
       heroPill.className = "pill"; heroPill.textContent="";
+      heroEl.className = "hero";
     } else if (answered < TOTAL_ITEMS){
       heroNote.textContent = (TOTAL_ITEMS - answered)+" item lagi belum dinilai.";
       heroPill.className = "pill warn"; heroPill.textContent="Belum lengkap";
+      heroEl.className = "hero hero-warn";
     } else if (pct >= MIN_EXPECTED){
       heroNote.textContent = "Di atas skor minimum ("+MIN_EXPECTED.toFixed(2)+").";
       heroPill.className = "pill good"; heroPill.textContent="Memenuhi target";
+      heroEl.className = "hero hero-good";
     } else {
       heroNote.textContent = "Di bawah skor minimum ("+MIN_EXPECTED.toFixed(2)+").";
       heroPill.className = "pill bad"; heroPill.textContent="Di bawah target";
+      heroEl.className = "hero hero-bad";
     }
   }
 
