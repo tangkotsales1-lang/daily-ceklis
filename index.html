@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
   :root{
     --ink:#EEF1FC;
@@ -115,8 +116,27 @@
     box-shadow:var(--shadow);
   }
   .brandmark svg{width:20px; height:20px;}
-  .brandtext h1{font-size:21px; font-weight:700; line-height:1.1; margin:0;}
+  .brandtext{cursor:pointer; user-select:none;}
+  .brandtext h1{font-size:21px; font-weight:700; line-height:1.1; margin:0; display:flex; align-items:center; gap:7px;}
+  .brandtext h1::after{
+    content:""; width:7px; height:7px; border-right:2px solid var(--ink-soft); border-bottom:2px solid var(--ink-soft);
+    transform:rotate(45deg); margin-top:-3px; opacity:.6; transition:transform .2s ease;
+  }
+  .brandtext.open h1::after{transform:rotate(-135deg); margin-top:3px;}
   .brandtext p{margin:2px 0 0; font-size:12.5px; color:var(--ink-soft); letter-spacing:.03em; text-transform:uppercase;}
+
+  .evalPanel{
+    display:none; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    background:var(--surface-2); border:1px solid var(--line); border-radius:12px;
+    padding:12px 14px; margin-bottom:12px;
+  }
+  .evalPanel.show{display:flex;}
+  .evalPanel-text{min-width:200px;}
+  .evalPanel-text strong{font-size:13.5px; display:block;}
+  .evalPanel-text span{font-size:12px; color:var(--ink-soft);}
+  .evalPanel-actions{display:flex; align-items:center; gap:10px; flex:none;}
+  .evalPanel-actions .btn{padding:9px 16px; font-size:13.5px;}
+  .evalHint{font-size:12px; color:var(--ink-soft); max-width:220px;}
 
   .tabs{display:flex; gap:4px; padding-bottom:12px;}
   .tab{
@@ -344,9 +364,19 @@
       <div class="brandmark">
         <svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#1A0C00" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <div class="brandtext">
+      <div class="brandtext" id="brandText">
         <h1>Daily Activity Checklist</h1>
         <p>Store Leader &middot; Kunjungan Cabang</p>
+      </div>
+    </div>
+    <div class="evalPanel" id="evalPanel">
+      <div class="evalPanel-text">
+        <strong>Rekap Penilaian Store Leader</strong>
+        <span>Dihitung otomatis dari seluruh ceklis yang sudah tersimpan.</span>
+      </div>
+      <div class="evalPanel-actions">
+        <span class="evalHint" id="evalHint"></span>
+        <button type="button" class="btn btn-primary" id="evalDownloadBtn">Unduh Excel (.xlsx)</button>
       </div>
     </div>
     <div class="tabs" role="tablist">
@@ -521,6 +551,10 @@
   var answers = {}; // key -> {score, catId, label, value}
   var photos = {}; // key -> [{catId, label, src}, ...]  — optional evidence photos per item (multiple allowed), doesn't affect score
   var notes = {}; // key -> free-text note per item, typed by the Store Leader, doesn't affect score
+  // Captured automatically the moment "Nama Store Leader" is first filled in — a much closer
+  // proxy for actual arrival time at the branch than submittedAt (which is whenever the whole
+  // checklist finally gets submitted, sometimes hours later). Doesn't affect the score.
+  var arrivalTime = null;
   var openCat = CATEGORIES[0].id;
   var submissions = [];
   var sb = null;
@@ -548,6 +582,7 @@
       answers: answers,
       photos: photos,
       notes: notes,
+      arrival: arrivalTime,
       openCat: openCat,
       savedAt: Date.now()
     };
@@ -612,6 +647,7 @@
     answers = pendingDraft.answers || {};
     photos = pendingDraft.photos || {};
     notes = pendingDraft.notes || {};
+    arrivalTime = pendingDraft.arrival || null;
     openCat = pendingDraft.openCat || CATEGORIES[0].id;
     fCabang.value = pendingDraft.branch || "";
     fTanggal.value = pendingDraft.date || todayISO();
@@ -925,6 +961,14 @@
     el.addEventListener("input", function(){ updateProgress(); scheduleDraftSave(); });
     el.addEventListener("change", function(){ updateProgress(); scheduleDraftSave(); });
   });
+  // Record the moment the name field first goes from empty to non-empty as the "jam
+  // kedatangan" — only once per checklist (editing/retyping the name afterwards doesn't
+  // push the time later), and only cleared again by resetForm()/starting a new checklist.
+  fLeader.addEventListener("input", function(){
+    if (!arrivalTime && fLeader.value.trim()){
+      arrivalTime = new Date().toISOString();
+    }
+  });
 
   /* ---------------- tabs ---------------- */
   var tabFillBtn = document.getElementById("tabFillBtn");
@@ -950,6 +994,7 @@
     answers = {};
     photos = {};
     notes = {};
+    arrivalTime = null;
     openCat = CATEGORIES[0].id;
     fLeader.value = "";
     fTanggal.value = todayISO();
@@ -975,12 +1020,17 @@
     // (no dot in it, so it can never collide with a real "catId.itemId" answer key) — this
     // avoids needing a separate database column/migration just for notes.
     var notesSnapshot = Object.assign({}, notes);
+    // Arrival time rides along in the same "answers" jsonb blob as _meta_notes, under
+    // another reserved key — same trick, no DB migration needed. Falls back to "now" in
+    // the rare case the name was pasted in without ever firing an input event.
+    var arrivalSnapshot = arrivalTime || new Date().toISOString();
     var record = {
       branch: fCabang.value,
       date: fTanggal.value,
       leader: fLeader.value.trim(),
-      answers: Object.assign({}, answers, { _meta_notes: notesSnapshot }),
+      answers: Object.assign({}, answers, { _meta_notes: notesSnapshot, _meta_arrival: arrivalSnapshot }),
       notes: notesSnapshot,
+      arrivalAt: arrivalSnapshot,
       percent: Math.round(pct*100)/100,
       minExpected: MIN_EXPECTED,
       totalItems: TOTAL_ITEMS,
@@ -1184,6 +1234,7 @@
       leader: row.leader,
       answers: rawAnswers,
       notes: rawAnswers._meta_notes || {},
+      arrivalAt: rawAnswers._meta_arrival || null,
       percent: Number(row.percent),
       minExpected: Number(row.min_expected),
       totalItems: row.total_items,
@@ -1220,6 +1271,294 @@
       .on("postgres_changes", { event:"*", schema:"public", table:"submissions" }, function(){ fetchSubmissions(); })
       .subscribe();
   }
+
+  /* ---------------- evaluation report (xlsx export) ----------------
+     Tap the app title to reveal a button that builds a fresh "Penilaian
+     Store Leader" workbook (same rubric agreed with Teh Feni) straight from
+     whatever submissions are currently loaded in this app — the same live
+     data the Riwayat tab uses, not a separately-maintained file. The file
+     is rebuilt from scratch every time it's downloaded, so it's always
+     current. */
+  var brandTextEl = document.getElementById("brandText");
+  var evalPanelEl = document.getElementById("evalPanel");
+  var evalHintEl = document.getElementById("evalHint");
+  var evalDownloadBtn = document.getElementById("evalDownloadBtn");
+
+  brandTextEl.addEventListener("click", function(){
+    var willShow = !evalPanelEl.classList.contains("show");
+    evalPanelEl.classList.toggle("show", willShow);
+    brandTextEl.classList.toggle("open", willShow);
+    if (willShow){
+      evalHintEl.textContent = submissions.length ? (submissions.length+" ceklis tersedia.") : "Belum ada ceklis tersimpan.";
+    }
+  });
+
+  // Items eligible for photo evidence: every scorable item except the ones
+  // flagged noEvidence:true (plain quantity-reconciliation checks where a
+  // photo wouldn't add anything).
+  function eligibleEvidenceItemIds(){
+    var ids = [];
+    CATEGORIES.forEach(function(cat){
+      cat.items.forEach(function(it){
+        if (!it.noEvidence) ids.push(cat.id+"."+it.id);
+      });
+    });
+    return ids;
+  }
+  var EVIDENCE_ELIGIBLE_IDS = eligibleEvidenceItemIds();
+
+  function wibTimeLabel(isoTimestamp){
+    if (!isoTimestamp) return "-";
+    var d = new Date(isoTimestamp);
+    var h = (d.getUTCHours()+7) % 24;
+    var mnt = d.getUTCMinutes();
+    return String(h).padStart(2,"0")+":"+String(mnt).padStart(2,"0");
+  }
+
+  function computeSubmissionMetrics(sub){
+    var rawAnswers = sub.answers || {};
+    var itemKeys = Object.keys(rawAnswers).filter(function(k){ return k !== "_meta_notes" && k !== "_meta_arrival"; });
+
+    // Kedisiplinan Pengisian: % of evidence-eligible items that actually have >=1 photo.
+    var photoSet = {};
+    (sub.photoKeys||[]).forEach(function(k){ if (EVIDENCE_ELIGIBLE_IDS.indexOf(k) !== -1) photoSet[k] = true; });
+    var docPct = EVIDENCE_ELIGIBLE_IDS.length ? Math.round((Object.keys(photoSet).length / EVIDENCE_ELIGIBLE_IDS.length) * 1000) / 10 : 0;
+
+    // Akurasi Rekomendasi: of items scored <10 ("bermasalah"), how many got a written note.
+    var bermasalahTotal = 0, bermasalahAdaCatatan = 0;
+    itemKeys.forEach(function(k){
+      var a = rawAnswers[k];
+      if (a && Number(a.score) < 10){
+        bermasalahTotal++;
+        var note = (sub.notes||{})[k];
+        if (note && String(note).trim()) bermasalahAdaCatatan++;
+      }
+    });
+    var rekomPct = bermasalahTotal ? Math.round((bermasalahAdaCatatan/bermasalahTotal)*1000)/10 : 100;
+
+    // Integritas pelaporan: based on the "Check Log Activities" answer.
+    var logAnswer = rawAnswers["transaksi.log"];
+    var integritas = 100;
+    if (logAnswer){
+      if (logAnswer.label === "Ada yang diedit, nominal") integritas = 50;
+      else if (logAnswer.label === "Ada yang diedit, bukan nominal") integritas = 90;
+    }
+
+    // Ketepatan Hadir: compared against the agreed 14:00-15:00 visit window.
+    // Prefers arrivalAt — the timestamp captured the moment "Nama Store Leader" was first
+    // filled in, a much closer proxy for actual arrival than submittedAt (whenever the
+    // whole checklist finally gets submitted, sometimes hours later). Older submissions
+    // saved before this feature existed don't have arrivalAt, so those fall back to
+    // submittedAt and are flagged as an estimate rather than a measured arrival time.
+    var usedTimestamp = sub.arrivalAt || sub.submittedAt;
+    var measured = !!sub.arrivalAt;
+    var wib = wibTimeLabel(usedTimestamp);
+    var onTime = false;
+    if (usedTimestamp){
+      var d = new Date(usedTimestamp);
+      var mins = ((d.getUTCHours()+7) % 24)*60 + d.getUTCMinutes();
+      onTime = mins >= 14*60 && mins <= 15*60;
+    }
+
+    return {
+      skorKepatuhan: Math.round(Number(sub.percent||0)*10)/10,
+      kedisiplinan: docPct,
+      akurasiRekomendasi: rekomPct,
+      integritas: integritas,
+      ketepatanHadir: onTime ? 100 : 0,
+      wib: wib,
+      onTime: onTime,
+      measured: measured
+    };
+  }
+
+  function buildEvaluationWorkbook(rows){
+    var wb = new ExcelJS.Workbook();
+    wb.creator = "Ceklis Harian Store Leader";
+    wb.created = new Date();
+
+    var FONT = "Arial";
+    var headerFill = {type:"pattern", pattern:"solid", fgColor:{argb:"FF1F2447"}};
+    var headerFont = {name:FONT, size:11, bold:true, color:{argb:"FFFFFFFF"}};
+    var titleFont = {name:FONT, size:16, bold:true, color:{argb:"FF12182B"}};
+    var subtitleFont = {name:FONT, size:10, italic:true, color:{argb:"FF4B5468"}};
+    var normalFont = {name:FONT, size:10.5};
+    var boldFont = {name:FONT, size:10.5, bold:true};
+    var dataFont = {name:FONT, size:10.5, color:{argb:"FF000000"}};
+    var flagFill = {type:"pattern", pattern:"solid", fgColor:{argb:"FFFDE9D9"}};
+    var thinBorder = {style:"thin", color:{argb:"FFD6DCE7"}};
+    var border = {top:thinBorder,left:thinBorder,right:thinBorder,bottom:thinBorder};
+    var center = {horizontal:"center", vertical:"middle", wrapText:true};
+    var leftWrap = {horizontal:"left", vertical:"middle", wrapText:true};
+
+    // ---- Sheet 1: Rubrik Penilaian ----
+    var ws1 = wb.addWorksheet("Rubrik Penilaian");
+    ws1.views = [{showGridLines:false}];
+    ws1.getCell("B2").value = "Rubrik Penilaian Teh Feni";
+    ws1.getCell("B2").font = titleFont;
+    ws1.getCell("B3").value = "Ceklis Harian Store — dasar penilaian kinerja berdasarkan riwayat pengisian ceklis";
+    ws1.getCell("B3").font = subtitleFont;
+
+    ["Aspek Penilaian","Bobot","Cara Menghitung (skala 0-100)","Sumber Data"].forEach(function(h, i){
+      var c = ws1.getCell(5, 2+i);
+      c.value = h; c.font = headerFont; c.fill = headerFill; c.alignment = center; c.border = border;
+    });
+
+    var rubrikRows = [
+      ["Kepatuhan pengerjaan","40%","Rata-rata persentase skor ceklis (kolom percent) dibanding target minimum 86.","Tabel submissions.percent"],
+      ["Kedisiplinan Pengisian","20%","Persentase item wajib-foto yang benar-benar ada bukti fotonya (dari item yang bisa difoto).","Kolom photo_keys pada setiap ceklis"],
+      ["Akurasi Rekomendasi","20%","Dari item yang skornya bermasalah (<10), berapa persen yang disertai catatan/rekomendasi perbaikan tertulis.","Jawaban item bermasalah + catatan (_meta_notes)"],
+      ["Integritas pelaporan","10%","100 dikurangi 10 per kejadian \"diedit bukan nominal\" dan 50 per kejadian \"diedit nominal\" pada Check Log Activities.","Jawaban item transaksi.log"],
+      ["Ketepatan Hadir","10%","100 jika jam kedatangan (tercatat otomatis saat Nama Store Leader diisi) ada dalam jadwal kunjungan 14:00-15:00 WIB, 0 jika di luar jadwal. Untuk ceklis lama sebelum fitur ini ada, dipakai jam submit sebagai estimasi (ditandai oranye).","Kolom _meta_arrival pada setiap ceklis, fallback ke submitted_at untuk data lama"]
+    ];
+    var r = 6;
+    rubrikRows.forEach(function(row){
+      row.forEach(function(val, i){
+        var c = ws1.getCell(r, 2+i);
+        c.value = val; c.font = i===0 ? boldFont : normalFont; c.border = border;
+        c.alignment = i===1 ? center : leftWrap;
+      });
+      ws1.getRow(r).height = 50;
+      r++;
+    });
+
+    r += 1;
+    ws1.getCell(r, 2).value = "Ambang Predikat (Total Skor terbobot)";
+    ws1.getCell(r, 2).font = boldFont;
+    r++;
+    [["≥ 90","Sangat Baik"],["80 – 89,9","Baik"],["70 – 79,9","Cukup"],["< 70","Kurang"]].forEach(function(p){
+      ws1.getCell(r,2).value = p[0]; ws1.getCell(r,2).font = normalFont; ws1.getCell(r,2).border = border;
+      ws1.getCell(r,3).value = p[1]; ws1.getCell(r,3).font = normalFont; ws1.getCell(r,3).border = border;
+      r++;
+    });
+
+    ws1.getColumn(1).width = 2;
+    ws1.getColumn(2).width = 24;
+    ws1.getColumn(3).width = 12;
+    ws1.getColumn(4).width = 55;
+    ws1.getColumn(5).width = 32;
+
+    r += 2;
+    var noteCell = ws1.getCell(r, 2);
+    noteCell.value = "Dibuat otomatis dari aplikasi pada "+new Date().toLocaleString("id-ID", {dateStyle:"long", timeStyle:"short"})+
+      ". Kolom \"Ketepatan Hadir\" memakai jam kedatangan yang tercatat otomatis begitu Nama Store Leader diisi. Ceklis dari sebelum fitur ini ada (ditandai oranye di sheet berikut) masih memakai jam submit sebagai estimasi.";
+    noteCell.font = subtitleFont;
+    noteCell.alignment = leftWrap;
+    ws1.mergeCells(r, 2, r, 5);
+    ws1.getRow(r).height = 48;
+
+    // ---- Sheet 2: Penilaian Store Leader ----
+    var ws2 = wb.addWorksheet("Penilaian Store Leader");
+    ws2.views = [{showGridLines:false, state:"frozen", ySplit:4}];
+    ws2.getCell("A1").value = "Penilaian Kinerja Store Leader";
+    ws2.getCell("A1").font = titleFont;
+    ws2.getCell("A2").value = "Data live, dihitung otomatis dari "+rows.length+" ceklis yang tersimpan di aplikasi saat file ini diunduh. "+
+      "Kolom \"Ketepatan Hadir\" terisi dari jam kedatangan otomatis; baris oranye adalah ceklis lama yang belum punya jam kedatangan, jadi memakai estimasi — lihat catatan di sel masing-masing.";
+    ws2.getCell("A2").font = subtitleFont;
+    ws2.getRow(2).height = 28;
+
+    var headers2 = ["No","Cabang","Nama Store Leader","Tanggal Kunjungan","Skor Kepatuhan\n(40%)","Kedisiplinan\nPengisian (20%)","Akurasi\nRekomendasi (20%)","Integritas\npelaporan (10%)","Ketepatan\nHadir (10%)","Total Skor\n(Terbobot)","Predikat"];
+    var headerRow = 4;
+    headers2.forEach(function(h, i){
+      var c = ws2.getCell(headerRow, 1+i);
+      c.value = h; c.font = headerFont; c.fill = headerFill; c.alignment = center; c.border = border;
+    });
+    ws2.getRow(headerRow).height = 42;
+
+    [5, 16, 20, 15, 13, 13, 13, 12, 12, 12, 12].forEach(function(w, i){ ws2.getColumn(1+i).width = w; });
+
+    var firstDataRow = headerRow + 1;
+    rows.forEach(function(d, idx){
+      var row = firstDataRow + idx;
+      var leaderTitled = d.leader ? d.leader.replace(/\b\w/g, function(c){ return c.toUpperCase(); }) : "";
+      [idx+1, d.branch, leaderTitled, d.date].forEach(function(v, i){
+        var c = ws2.getCell(row, 1+i);
+        c.value = v; c.font = dataFont; c.border = border;
+        c.alignment = i===2 ? leftWrap : center;
+      });
+      [d.metrics.skorKepatuhan, d.metrics.kedisiplinan, d.metrics.akurasiRekomendasi, d.metrics.integritas, d.metrics.ketepatanHadir].forEach(function(v, i){
+        var c = ws2.getCell(row, 5+i);
+        c.value = v; c.font = dataFont; c.border = border; c.alignment = center; c.numFmt = "0.0";
+      });
+      var ketCell = ws2.getCell(row, 9);
+      if (d.metrics.measured){
+        ketCell.note = "Jam kedatangan tercatat otomatis saat Nama Store Leader diisi: "+d.metrics.wib+" WIB (jadwal: 14:00-15:00 WIB). "+
+          (d.metrics.onTime?"Sesuai jadwal.":"Di luar jadwal.");
+      } else {
+        ketCell.fill = flagFill;
+        ketCell.note = "Ceklis lama (sebelum fitur jam kedatangan otomatis ada) — dipakai jam submit ceklis sebagai estimasi: "+d.metrics.wib+" WIB "+
+          "(jadwal: 14:00-15:00 WIB). "+(d.metrics.onTime?"Sesuai jadwal.":"Di luar jadwal.")+" Ini cuma estimasi, bukan jam kedatangan terverifikasi.";
+      }
+
+      var totalCell = ws2.getCell(row, 10);
+      totalCell.value = {formula: "E"+row+"*0.4+F"+row+"*0.2+G"+row+"*0.2+H"+row+"*0.1+I"+row+"*0.1"};
+      totalCell.font = dataFont; totalCell.border = border; totalCell.alignment = center; totalCell.numFmt = "0.0";
+
+      var predCell = ws2.getCell(row, 11);
+      predCell.value = {formula: 'IF(J'+row+'>=90,"Sangat Baik",IF(J'+row+'>=80,"Baik",IF(J'+row+'>=70,"Cukup","Kurang")))'};
+      predCell.font = dataFont; predCell.border = border; predCell.alignment = center;
+    });
+
+    var legendRow = firstDataRow + rows.length + 2;
+    ws2.getCell(legendRow, 1).value = "Keterangan:";
+    ws2.getCell(legendRow, 1).font = boldFont;
+    var legendItems = [
+      "File ini dibuat ulang setiap diunduh, langsung dari data ceklis yang sedang tersimpan di aplikasi — tidak perlu direkap manual.",
+      "Kolom \"Ketepatan Hadir\" memakai jam kedatangan yang tercatat otomatis begitu Nama Store Leader diisi di form. Baris oranye adalah ceklis dari sebelum fitur ini ada, jadi masih memakai jam submit sebagai estimasi — cek catatan di sel itu.",
+      "Kolom Total Skor & Predikat terisi otomatis dari rumus."
+    ];
+    var lr = legendRow + 1;
+    legendItems.forEach(function(item){
+      ws2.getCell(lr,1).value = "•"; ws2.getCell(lr,1).font = normalFont;
+      var c = ws2.getCell(lr,2); c.value = item; c.font = normalFont; c.alignment = leftWrap;
+      ws2.mergeCells(lr,2,lr,9);
+      ws2.getRow(lr).height = 30;
+      lr++;
+    });
+
+    return wb;
+  }
+
+  function generateAndDownloadEvaluation(){
+    if (!window.ExcelJS){
+      evalHintEl.textContent = "Gagal memuat modul Excel. Cek koneksi internet lalu coba lagi.";
+      return;
+    }
+    if (!submissions.length){
+      evalHintEl.textContent = "Belum ada ceklis tersimpan untuk direkap.";
+      return;
+    }
+    evalDownloadBtn.disabled = true;
+    evalDownloadBtn.textContent = "Membuat...";
+    evalHintEl.textContent = "";
+
+    var rows = submissions.slice().sort(function(a,b){
+      return new Date(a.submittedAt) - new Date(b.submittedAt);
+    }).map(function(sub){
+      return { branch: sub.branch, leader: sub.leader, date: sub.date, metrics: computeSubmissionMetrics(sub) };
+    });
+
+    var wb = buildEvaluationWorkbook(rows);
+    wb.xlsx.writeBuffer().then(function(buffer){
+      var blob = new Blob([buffer], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "Penilaian_Store_Leader_"+todayISO()+".xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+      evalDownloadBtn.disabled = false;
+      evalDownloadBtn.textContent = "Unduh Excel (.xlsx)";
+      evalHintEl.textContent = rows.length+" ceklis berhasil direkap.";
+    }).catch(function(err){
+      evalDownloadBtn.disabled = false;
+      evalDownloadBtn.textContent = "Unduh Excel (.xlsx)";
+      evalHintEl.textContent = "Gagal membuat file. Coba lagi.";
+    });
+  }
+  evalDownloadBtn.addEventListener("click", generateAndDownloadEvaluation);
 
   /* ---------------- init ---------------- */
   renderAccordion();
