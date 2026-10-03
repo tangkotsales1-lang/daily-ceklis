@@ -468,10 +468,24 @@
     sesuai2: [["Sesuai",10],["Tidak Sesuai",0]],
     logEdit: [["Tidak ada yang diedit",10],["Ada yang diedit, bukan nominal",5],["Ada yang diedit, nominal",0]],
     harga: [["Sesuai dengan harga barang yang current",10],["Tidak sesuai dengan harga barang yang current",0]],
-    gudang: [["Tidak ada barang tidak terpakai",10],["Ada barang tidak terpakai",0]]
+    gudang: [["Tidak ada barang tidak terpakai",10],["Ada barang tidak terpakai",0]],
+    seragam: [["Memakai Seragam",10],["Tidak Memakai Seragam",0]],
+    idcard: [["Memakai Tanda Pengenal",10],["Tidak Memakai Tanda Pengenal",0]],
+    celana: [["Memakai Celana Panjang",10],["Tidak Memakai Celana Panjang",0]],
+    sepatu: [["Memakai Sepatu",10],["Tidak Memakai Sepatu",0]],
+    rambut: [["Rambut Pendek dan Rapih",10],["Rambut Pendek dan Tidak Rapih",5],["Rambut Panjang dan Tidak Rapih",0]],
+    kumis: [["Memelihara Kumis",10],["Tidak Memelihara Kumis",0]]
   };
 
   var CATEGORIES = [
+    { id:"penampilan", name:"Kelayakan Penampilan Karyawan", items:[
+      {id:"seragam", label:"Seragam", opt:"seragam"},
+      {id:"idcard", label:"ID Card / Name Tag", opt:"idcard"},
+      {id:"celana", label:"Celana Panjang", opt:"celana"},
+      {id:"sepatu", label:"Sepatu", opt:"sepatu"},
+      {id:"rambut", label:"Rambut Tidak Panjang dan Rapih", opt:"rambut"},
+      {id:"kumis", label:"Kumis", opt:"kumis"}
+    ]},
     { id:"kebersihan", name:"Kebersihan & Kelayakan Toko", items:[
       {id:"parkir", label:"Kondisi Area Parkir", opt:"bersihParkir"},
       {id:"pelayanan", label:"Kondisi Area Pelayanan", opt:"bersih"},
@@ -480,7 +494,7 @@
       {id:"ruang_meeting", label:"Kondisi Area Ruang Meeting", opt:"bersih"},
       {id:"gudang", label:"Kondisi Area Gudang", opt:"gudang"}
     ]},
-    { id:"kelengkapan_toko", name:"Kelengkapan Toko", items:[
+    { id:"kelengkapan_toko", name:"Kelayakan Toko", items:[
       {id:"tisu", label:"Kelengkapan Tisu", opt:"tersedia2"},
       {id:"keset", label:"Kelengkapan Keset", opt:"tersedia2"},
       {id:"lampu", label:"Kelengkapan Lampu", opt:"tersedia2"},
@@ -498,7 +512,7 @@
       {id:"akrilik_dinding", label:"Kondisi Akrilik Dinding", opt:"kontenRelevan"},
       {id:"akrilik_meja", label:"Kondisi Akrilik Meja", opt:"kontenRelevan"}
     ]},
-    { id:"stok", name:"Management Stok", items:[
+    { id:"stok", name:"Managemen Stok", items:[
       {id:"stok_hp", label:"Stok Handphone", opt:"lengkap"},
       {id:"stok_laptop", label:"Stok Laptop", opt:"lengkap"},
       {id:"stok_aksesoris", label:"Stok Aksesoris", opt:"lengkap"},
@@ -515,13 +529,13 @@
       // noEvidence:true — no per-item photo/note block, since it doesn't add value
       // for a straight quantity reconciliation check.
     ]},
-    { id:"uang", name:"Check Uang Masuk", items:[
+    { id:"uang", name:"Uang Masuk Kas", items:[
       {id:"cash", label:"Cek Uang Cash di Meja Admin (Accurate & Rill)", opt:"sesuai2"},
       {id:"qris", label:"Cek QRIS di Merchant (Accurate & Rill)", opt:"sesuai2"},
       {id:"edc", label:"Cek EDC (Accurate & Rill)", opt:"sesuai2"},
       {id:"transfer", label:"Cek Transfer di Mutasi Rekening (Accurate & Rill)", opt:"sesuai2", noEvidence:true}
     ]},
-    { id:"transaksi", name:"Check Transaksi & Harga", items:[
+    { id:"transaksi", name:"Transaksi dan Harga", items:[
       {id:"log", label:"Check Log Activities", opt:"logEdit", noEvidence:true},
       {id:"harga_gadget", label:"Cek Harga Gadget di Pricetag", opt:"harga"},
       {id:"harga_aksesoris", label:"Cek Harga Aksesoris di Pricetag", opt:"harga"},
