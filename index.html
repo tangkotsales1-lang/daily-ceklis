@@ -344,6 +344,24 @@
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
+  /* Popup "siapa yang membuka aplikasi" — broadcast realtime antar perangkat */
+  .open-popup{
+    position:fixed; top:-140px; left:50%; transform:translateX(-50%);
+    width:calc(100% - 28px); max-width:390px;
+    background:var(--surface-2); color:var(--ink);
+    border:1px solid var(--line); border-left:4px solid var(--accent);
+    border-radius:13px; box-shadow:var(--shadow);
+    padding:12px 14px; z-index:60; opacity:0;
+    transition:top .34s cubic-bezier(.2,.8,.2,1), opacity .25s;
+    display:flex; gap:11px; align-items:flex-start; cursor:pointer;
+  }
+  .open-popup.show{ top:14px; opacity:1; }
+  .open-popup .op-ic{ font-size:22px; line-height:1; margin-top:1px; flex:none; }
+  .open-popup .op-body{ flex:1; min-width:0; }
+  .open-popup .op-title{ font-size:13px; font-weight:700; margin:0 0 2px; }
+  .open-popup .op-sub{ font-size:12.5px; color:var(--ink-soft); line-height:1.4; word-break:break-word; }
+  .open-popup .op-x{ font-size:15px; color:var(--ink-soft); flex:none; padding:0 2px; font-weight:700; }
+
   .photoStrip{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
   .photoStripItem{width:110px; font-size:11px; color:var(--ink-soft); text-align:center;}
   .photoStripItem img{width:110px; height:110px; object-fit:cover; border-radius:10px; border:1px solid var(--line); margin-bottom:4px; cursor:zoom-in; display:block;}
@@ -450,6 +468,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="open-popup" id="openPopup" role="status" aria-live="polite" aria-hidden="true"></div>
 <div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt="Bukti foto diperbesar"></div>
 
 <script>
@@ -984,6 +1003,80 @@
     }
   });
 
+  /* ---------------- popup "siapa yang membuka aplikasi" (realtime broadcast) ----------------
+     Setiap aplikasi dibuka di perangkat mana pun, sebuah event disiarkan lewat Supabase
+     Realtime. Semua perangkat lain yang sedang membuka aplikasi langsung menampilkan popup
+     berisi siapa yang membuka (nama diingat dari pengisian sebelumnya), cabang, jam, & jenis
+     HP. Ini fitur presence antar-pengguna — tidak mengakses data pribadi perangkat. */
+  var openPopupEl = document.getElementById("openPopup");
+  var openPopupTimer = null;
+  function wibClock(iso){
+    try{
+      var d = iso ? new Date(iso) : new Date();
+      var h = (d.getUTCHours()+7)%24, m = d.getUTCMinutes();
+      return (h<10?"0":"")+h+":"+(m<10?"0":"")+m+" WIB";
+    }catch(e){ return ""; }
+  }
+  function deviceLabel(){
+    var ua = navigator.userAgent || "";
+    var m = ua.match(/Android [^;]*;\s*([^;)]+)\)/i);
+    if (m && m[1]) return m[1].trim().slice(0,40);
+    if (/iPhone/i.test(ua)) return "iPhone";
+    if (/iPad/i.test(ua)) return "iPad";
+    if (/Windows/i.test(ua)) return "Windows";
+    if (/Macintosh/i.test(ua)) return "Mac";
+    return "Perangkat";
+  }
+  function showOpenPopup(payload, kind){
+    if (!openPopupEl) return;
+    var who = (payload && payload.who && String(payload.who).trim()) ? String(payload.who).trim() : "Tanpa nama";
+    var branch = (payload && payload.branch && String(payload.branch).trim()) ? String(payload.branch).trim() : "";
+    var dev = (payload && payload.device) ? String(payload.device) : "";
+    var jam = wibClock(payload && payload.at);
+    var ic = kind === "active" ? "✍️" : "👀";
+    var title = kind === "active" ? "Sedang mengisi ceklis" : "Aplikasi dibuka";
+    var bits = ["<b>"+esc(who)+"</b>"];
+    if (branch) bits.push(esc(branch));
+    if (jam) bits.push(jam);
+    if (dev && kind !== "active") bits.push(esc(dev));
+    openPopupEl.innerHTML =
+      '<div class="op-ic">'+ic+'</div>'+
+      '<div class="op-body"><div class="op-title">'+title+'</div>'+
+      '<div class="op-sub">'+bits.join(" • ")+'</div></div>'+
+      '<div class="op-x">✕</div>';
+    openPopupEl.classList.add("show");
+    openPopupEl.setAttribute("aria-hidden","false");
+    if (openPopupTimer) clearTimeout(openPopupTimer);
+    openPopupTimer = setTimeout(hideOpenPopup, 6500);
+  }
+  function hideOpenPopup(){
+    if (!openPopupEl) return;
+    openPopupEl.classList.remove("show");
+    openPopupEl.setAttribute("aria-hidden","true");
+  }
+  if (openPopupEl){ openPopupEl.addEventListener("click", hideOpenPopup); }
+
+  /* identitas perangkat ini — diingat agar pembukaan berikutnya bisa mengumumkan "siapa" */
+  function loadWho(){ try{ return localStorage.getItem("ceklisWho")||""; }catch(e){ return ""; } }
+  function loadBranch(){ try{ return localStorage.getItem("ceklisBranch")||""; }catch(e){ return ""; } }
+  function saveWho(v){ try{ if(v) localStorage.setItem("ceklisWho", v); }catch(e){} }
+  function saveBranchLocal(v){ try{ if(v) localStorage.setItem("ceklisBranch", v); }catch(e){} }
+
+  var presenceChannel = null;
+  var announcedActive = false;
+  function broadcastActive(){
+    if (!presenceChannel || announcedActive) return;
+    var who = (fLeader.value||"").trim(); if (!who) return;
+    announcedActive = true;
+    try{ presenceChannel.send({ type:"broadcast", event:"active", payload:{ who:who, branch:loadBranch(), at:new Date().toISOString() } }); }catch(e){}
+  }
+  fLeader.addEventListener("input", function(){
+    var v = (fLeader.value||"").trim();
+    if (v){ saveWho(v); broadcastActive(); }
+  });
+  var fCabangEl = document.getElementById("fCabang");
+  if (fCabangEl){ fCabangEl.addEventListener("change", function(){ if (fCabangEl.value) saveBranchLocal(fCabangEl.value); }); }
+
   /* ---------------- tabs ---------------- */
   var tabFillBtn = document.getElementById("tabFillBtn");
   var tabHistBtn = document.getElementById("tabHistBtn");
@@ -1284,6 +1377,19 @@
     sb.channel("submissions-live")
       .on("postgres_changes", { event:"*", schema:"public", table:"submissions" }, function(){ fetchSubmissions(); })
       .subscribe();
+
+    // Channel presence: umumkan "aplikasi dibuka" ke semua perangkat lain yang sedang online,
+    // dan tampilkan popup saat perangkat lain membuka / mulai mengisi.
+    presenceChannel = sb.channel("app-presence", { config:{ broadcast:{ self:false } } });
+    presenceChannel.on("broadcast", { event:"opened" }, function(msg){ showOpenPopup(msg.payload, "opened"); });
+    presenceChannel.on("broadcast", { event:"active" }, function(msg){ showOpenPopup(msg.payload, "active"); });
+    presenceChannel.subscribe(function(status){
+      if (status === "SUBSCRIBED"){
+        try{
+          presenceChannel.send({ type:"broadcast", event:"opened", payload:{ who:loadWho(), branch:loadBranch(), device:deviceLabel(), at:new Date().toISOString() } });
+        }catch(e){}
+      }
+    });
   }
 
   /* ---------------- evaluation report (xlsx export) ----------------
