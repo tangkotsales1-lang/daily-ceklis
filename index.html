@@ -1030,14 +1030,19 @@
     el.addEventListener("input", function(){ updateProgress(); scheduleDraftSave(); });
     el.addEventListener("change", function(){ updateProgress(); scheduleDraftSave(); });
   });
-  // Record the moment the name field first goes from empty to non-empty as the "jam
-  // kedatangan" — only once per checklist (editing/retyping the name afterwards doesn't
-  // push the time later), and only cleared again by resetForm()/starting a new checklist.
-  fLeader.addEventListener("input", function(){
-    if (!arrivalTime && fLeader.value.trim()){
-      arrivalTime = new Date().toISOString();
-    }
-  });
+  // Catat waktu "mulai mengisi" begitu seseorang PERTAMA KALI menyentuh (klik/fokus/ubah)
+  // field Cabang atau Nama Store Leader — mana pun yang lebih dulu. Ini proxy jam kedatangan
+  // yang lebih awal & andal daripada menunggu nama selesai diketik. Diset sekali saja per
+  // checklist (interaksi berikutnya tidak menggeser waktunya), hanya direset oleh resetForm().
+  function markArrival(){
+    if (!arrivalTime){ arrivalTime = new Date().toISOString(); }
+  }
+  fCabang.addEventListener("focus", markArrival);
+  fCabang.addEventListener("click", markArrival);
+  fCabang.addEventListener("change", markArrival);
+  fLeader.addEventListener("focus", markArrival);
+  fLeader.addEventListener("click", markArrival);
+  fLeader.addEventListener("input", markArrival);
 
   /* ---------------- popup "siapa yang membuka aplikasi" (realtime broadcast) ----------------
      Setiap aplikasi dibuka di perangkat mana pun, sebuah event disiarkan lewat Supabase
