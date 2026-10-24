@@ -325,6 +325,26 @@
   }
   .ticketDelete:hover{background:var(--bad-bg); color:var(--bad);}
   .ticketDelete svg{width:15px; height:15px;}
+  .ticketEdit{
+    appearance:none; border:none; background:transparent; color:var(--ink-soft); cursor:pointer;
+    flex:none; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    transition:background .12s, color .12s;
+  }
+  .ticketEdit:hover{background:var(--accent-tint); color:var(--accent);}
+  .ticketEdit svg{width:15px; height:15px;}
+
+  /* Modal edit data kunjungan (cabang / tanggal / nama store leader) */
+  .editModal{ position:fixed; inset:0; background:rgba(8,10,18,.74); display:none; align-items:center; justify-content:center; padding:20px; z-index:70; }
+  .editModal.show{ display:flex; }
+  .editCard{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:18px 18px 20px; }
+  .editCard h3{ margin:0 0 4px; font-size:16px; }
+  .editCard .editSub{ margin:0 0 6px; font-size:12px; color:var(--ink-soft); }
+  .editCard label{ display:block; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin:13px 0 5px; }
+  .editCard select, .editCard input{ width:100%; box-sizing:border-box; background:var(--surface-2); border:1px solid var(--line); color:var(--ink); border-radius:10px; padding:11px 12px; font-size:14px; font-family:inherit; }
+  .editActions{ display:flex; gap:10px; margin-top:18px; }
+  .editActions button{ flex:1; border-radius:10px; padding:11px; font-size:14px; font-weight:700; cursor:pointer; }
+  .editBtnCancel{ background:transparent; color:var(--ink-soft); border:1px solid var(--line); }
+  .editBtnSave{ background:var(--accent); color:#1b1003; border:1px solid var(--accent); }
   .ticket-body{display:none; border-top:1px solid var(--line); padding:12px 16px; background:var(--surface-2);}
   .ticket.open .ticket-body{display:block;}
   .subgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px;}
@@ -469,6 +489,22 @@
 
 <div class="toast" id="toast"></div>
 <div class="open-popup" id="openPopup" role="status" aria-live="polite" aria-hidden="true"></div>
+<div class="editModal" id="editModal" aria-hidden="true">
+  <div class="editCard" role="dialog" aria-modal="true" aria-label="Edit data kunjungan">
+    <h3>Edit Data Kunjungan</h3>
+    <p class="editSub">Ubah cabang, tanggal, atau nama Store Leader untuk riwayat ini.</p>
+    <label for="editBranch">Cabang</label>
+    <select id="editBranch"></select>
+    <label for="editDate">Tanggal Kunjungan</label>
+    <input type="date" id="editDate">
+    <label for="editLeader">Nama Store Leader</label>
+    <input type="text" id="editLeader" placeholder="Nama lengkap" autocomplete="off">
+    <div class="editActions">
+      <button type="button" class="editBtnCancel" id="editCancel">Batal</button>
+      <button type="button" class="editBtnSave" id="editSave">Simpan</button>
+    </div>
+  </div>
+</div>
 <div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt="Bukti foto diperbesar"></div>
 
 <script>
@@ -1261,6 +1297,9 @@
             '<span class="ticket-leader">'+esc(s.leader||"")+'</span>'+
             badgeHtml+
             '<span class="pill '+scoreTier(s.percent)+'">'+s.percent.toFixed(1)+'</span>'+
+            '<button type="button" class="ticketEdit" data-edit-ticket="'+s.id+'" aria-label="Edit data kunjungan" title="Edit cabang / tanggal / nama">'+
+              '<svg viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5a2 2 0 0 0 0-2.83l-1.17-1.17a2 2 0 0 0-2.83 0L4 16v4Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.3 6.7l4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'+
+            '</button>'+
             '<button type="button" class="ticketDelete" data-delete-ticket="'+s.id+'" aria-label="Hapus riwayat ini" title="Hapus riwayat ini">'+
               '<svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'+
             '</button>'+
@@ -1295,6 +1334,54 @@
     }
   }
 
+  /* ---------------- edit data kunjungan (cabang / tanggal / nama leader) ---------------- */
+  var editModalEl = document.getElementById("editModal");
+  var editBranchEl = document.getElementById("editBranch");
+  var editDateEl = document.getElementById("editDate");
+  var editLeaderEl = document.getElementById("editLeader");
+  var editingId = null;
+  (BRANCHES || []).forEach(function(b){ var o=document.createElement("option"); o.value=b; o.textContent=b; editBranchEl.appendChild(o); });
+  function openEditModal(id){
+    var s = submissions.find(function(x){ return x.id===id; });
+    if (!s) return;
+    editingId = id;
+    // kalau cabang lama tidak ada di daftar (data lama), tambahkan sementara agar tidak hilang
+    if (s.branch && !Array.prototype.some.call(editBranchEl.options, function(o){ return o.value===s.branch; })){
+      var o=document.createElement("option"); o.value=s.branch; o.textContent=s.branch; editBranchEl.appendChild(o);
+    }
+    editBranchEl.value = s.branch || "";
+    editDateEl.value = s.date || "";
+    editLeaderEl.value = s.leader || "";
+    editModalEl.classList.add("show");
+    editModalEl.setAttribute("aria-hidden","false");
+  }
+  function closeEditModal(){ editModalEl.classList.remove("show"); editModalEl.setAttribute("aria-hidden","true"); editingId=null; }
+  editModalEl.addEventListener("click", function(e){ if (e.target===editModalEl) closeEditModal(); });
+  document.getElementById("editCancel").addEventListener("click", closeEditModal);
+  document.getElementById("editSave").addEventListener("click", function(){
+    if (!editingId) return;
+    var id = editingId;
+    var patch = { branch: editBranchEl.value, visit_date: editDateEl.value, leader: editLeaderEl.value.trim() };
+    if (!patch.branch || !patch.visit_date){ toast("Cabang & tanggal wajib diisi."); return; }
+    // terapkan ke tampilan dulu biar responsif
+    var s = submissions.find(function(x){ return x.id===id; });
+    if (s){ s.branch=patch.branch; s.date=patch.visit_date; s.leader=patch.leader; }
+    renderHistory();
+    closeEditModal();
+    if (sb){
+      sb.from("submissions").update(patch).eq("id", id).then(function(res){
+        if (res && res.error) throw res.error;
+        toast("Data kunjungan diperbarui.");
+        fetchSubmissions();
+      }).catch(function(){
+        toast("Gagal menyimpan. Cek policy UPDATE di Supabase.");
+        fetchSubmissions();
+      });
+    } else {
+      toast("Data kunjungan diperbarui.");
+    }
+  });
+
   histList.addEventListener("click", function(e){
     var zoomImg = e.target.closest("[data-zoom-src]");
     if (zoomImg){
@@ -1309,6 +1396,11 @@
       if (window.confirm("Hapus riwayat "+label0+"? Tindakan ini tidak bisa dibatalkan.")){
         deleteSubmission(delId);
       }
+      return;
+    }
+    var editBtn = e.target.closest("[data-edit-ticket]");
+    if (editBtn){
+      openEditModal(editBtn.getAttribute("data-edit-ticket"));
       return;
     }
     var t = e.target.closest("[data-toggle-ticket]");
