@@ -354,6 +354,52 @@
   .ticket-time{ font-size:12px; color:var(--accent-ink); font-family:"IBM Plex Mono"; flex:none; background:var(--accent-tint); padding:1px 7px; border-radius:6px; }
   .startRow{ font-size:13px; color:var(--ink-soft); margin-bottom:9px; }
   .startRow b{ color:var(--ink); font-family:"IBM Plex Mono"; }
+
+  /* ---- Tab Jadwal Kunjungan ---- */
+  .jdw-monthbar{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:11px 14px;margin:2px 0 12px;}
+  .jdw-monthbar b{font-size:15px;}
+  .jdw-monthbar button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:16px;cursor:pointer;line-height:1;}
+  .jdw-monthbar button:disabled{opacity:.3;cursor:not-allowed;}
+  .jdw-cal{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 10px 14px;}
+  .jdw-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;}
+  .jdw-dow span{text-align:center;font-size:10.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;}
+  .jdw-dow span.sun{color:var(--bad);}
+  .jdw-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .jdw-cell{min-height:52px;border-radius:9px;background:var(--surface-2);border:1px solid transparent;padding:4px 3px;display:flex;flex-direction:column;align-items:center;overflow:hidden;}
+  .jdw-cell.empty{background:transparent;}
+  .jdw-cell .d{font-family:"IBM Plex Mono";font-size:11px;color:var(--ink-soft);line-height:1;margin-bottom:3px;align-self:flex-end;padding-right:2px;}
+  .jdw-cell.sun{opacity:.45;}
+  .jdw-cell.sun .d{color:var(--bad);}
+  .jdw-cell .br{font-size:8px;font-weight:700;text-align:center;line-height:1.08;color:var(--accent);word-break:break-word;}
+  .jdw-cell.has{background:var(--accent-tint);border-color:rgba(198,243,46,.35);}
+  .jdw-cell.today{box-shadow:0 0 0 2px var(--accent);}
+  .jdw-cell.today .d{color:var(--accent);}
+  .jdw-legend{display:flex;gap:14px;margin:12px 2px 18px;font-size:11px;color:var(--ink-soft);}
+  .jdw-legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px;}
+  .jdw-agenda h2{font-size:15px;margin:0 0 10px;}
+  .jdw-wk{font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 8px;}
+  .jdw-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:7px;}
+  .jdw-row.today{border-color:var(--accent);box-shadow:0 0 22px -10px rgba(198,243,46,.6);}
+  .jdw-row .date{flex:none;width:50px;text-align:center;}
+  .jdw-row .date .dd{font-family:"IBM Plex Mono";font-size:19px;font-weight:700;line-height:1;}
+  .jdw-row .date .dn{font-size:10px;color:var(--ink-soft);text-transform:uppercase;margin-top:2px;}
+  .jdw-row.today .date .dd{color:var(--accent);}
+  .jdw-row .bar{width:3px;align-self:stretch;border-radius:3px;background:var(--accent);flex:none;}
+  .jdw-row .nm{font-size:14.5px;font-weight:700;}
+  .jdw-row .sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px;}
+  .jdw-row .pill{margin-left:auto;flex:none;font-family:"IBM Plex Mono";font-size:10px;font-weight:700;color:#0E1400;background:var(--accent);padding:3px 8px;border-radius:99px;}
+  .jdw-cell{cursor:pointer;}
+  .jdw-cell .br+.br{margin-top:1px;}
+  .jdw-add-hint{font-size:15px;font-weight:700;color:var(--ink-soft);opacity:.4;margin-top:auto;margin-bottom:auto;}
+  .jdw-row{cursor:pointer;}
+  .jdw-tablehint{background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:11px;padding:11px 13px;margin-bottom:12px;font-size:12.5px;color:var(--ink-soft);line-height:1.45;}
+  .jdwm-chips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0;min-height:6px;}
+  .jdwm-chip{display:inline-flex;align-items:center;gap:8px;background:var(--accent-tint);color:var(--accent);border:1px solid rgba(198,243,46,.35);border-radius:99px;padding:5px 6px 5px 12px;font-size:12.5px;font-weight:700;}
+  .jdwm-chip button{appearance:none;border:none;background:rgba(0,0,0,.3);color:var(--accent);width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .jdwm-empty{font-size:12.5px;color:var(--ink-soft);}
+  .jdwm-add{display:flex;gap:9px;margin-top:6px;}
+  .jdwm-add select{flex:1;}
+  .jdwm-add button{flex:none;width:auto;padding:11px 16px;}
   .ticket-body{display:none; border-top:1px solid var(--line); padding:12px 16px; background:var(--surface-2);}
   .ticket.open .ticket-body{display:block;}
   .subgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px;}
@@ -429,6 +475,7 @@
     <div class="tabs" role="tablist">
       <button class="tab" id="tabFillBtn" role="tab" aria-selected="true">Isi Ceklis</button>
       <button class="tab" id="tabHistBtn" role="tab" aria-selected="false">Riwayat<span class="count" id="histCount">0</span></button>
+      <button class="tab" id="tabJadwalBtn" role="tab" aria-selected="false">Jadwal</button>
     </div>
   </div>
 </div>
@@ -488,6 +535,17 @@
     </div>
     <div id="histList"></div>
   </div>
+
+  <!-- JADWAL TAB -->
+  <div id="viewJadwal" style="display:none;">
+    <div class="sectionHead"><h2>Jadwal Kunjungan</h2><span class="hint">Tap tanggal untuk menetapkan cabang.</span></div>
+    <div class="jdw-tablehint" id="jdwTableHint" style="display:none;">Tabel jadwal belum ada di database. Jalankan SQL <b>visit_schedule</b> yang diberikan admin di Supabase, lalu buka ulang tab ini.</div>
+    <div class="jdw-monthbar"><button id="jdwPrev" aria-label="Bulan sebelumnya">&lsaquo;</button><b id="jdwLabel">—</b><button id="jdwNext" aria-label="Bulan berikutnya">&rsaquo;</button></div>
+    <div class="jdw-cal"><div class="jdw-dow"><span class="sun">Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span></div><div class="jdw-grid" id="jdwGrid"></div></div>
+    <div class="jdw-legend"><span><i style="background:var(--accent-tint);border:1px solid rgba(198,243,46,.4)"></i>Ada kunjungan</span><span><i style="background:transparent;box-shadow:inset 0 0 0 2px var(--accent)"></i>Hari ini</span></div>
+    <button type="button" class="btn btn-primary" id="jdwAutofill" style="width:100%;margin-bottom:16px;">Isi otomatis (rotasi) bulan ini</button>
+    <div class="jdw-agenda"><h2>Jadwal Hari per Hari</h2><div id="jdwAgenda"></div></div>
+  </div>
 </div>
 
 <div class="actionbar">
@@ -514,6 +572,16 @@
       <button type="button" class="editBtnCancel" id="editCancel">Batal</button>
       <button type="button" class="editBtnSave" id="editSave">Simpan</button>
     </div>
+  </div>
+</div>
+<div class="editModal" id="jadwalModal" aria-hidden="true">
+  <div class="editCard" role="dialog" aria-modal="true" aria-label="Atur jadwal kunjungan">
+    <h3 id="jdwmTitle">Atur Jadwal</h3>
+    <p class="editSub">Tetapkan cabang yang dikunjungi pada tanggal ini. Bisa lebih dari satu.</p>
+    <div id="jdwmChips" class="jdwm-chips"></div>
+    <label for="jdwmSelect">Tambah cabang</label>
+    <div class="jdwm-add"><select id="jdwmSelect"></select><button type="button" class="editBtnSave" id="jdwmAdd">Tambah</button></div>
+    <div class="editActions"><button type="button" class="editBtnCancel" id="jdwmClose">Selesai</button></div>
   </div>
 </div>
 <div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt="Bukti foto diperbesar"></div>
@@ -1175,16 +1243,155 @@
   var tabHistBtn = document.getElementById("tabHistBtn");
   var viewFill = document.getElementById("viewFill");
   var viewHist = document.getElementById("viewHist");
+  var viewJadwal = document.getElementById("viewJadwal");
+  var tabJadwalBtn = document.getElementById("tabJadwalBtn");
   function showTab(which){
-    var fill = which === "fill";
+    var fill = which === "fill", hist = which === "hist", jad = which === "jadwal";
     viewFill.style.display = fill ? "" : "none";
-    viewHist.style.display = fill ? "none" : "";
+    viewHist.style.display = hist ? "" : "none";
+    viewJadwal.style.display = jad ? "" : "none";
     tabFillBtn.setAttribute("aria-selected", fill ? "true":"false");
-    tabHistBtn.setAttribute("aria-selected", fill ? "false":"true");
+    tabHistBtn.setAttribute("aria-selected", hist ? "true":"false");
+    tabJadwalBtn.setAttribute("aria-selected", jad ? "true":"false");
     document.querySelector(".actionbar").style.display = fill ? "" : "none";
+    if (jad){
+      if (!jdwInit){ var t=jdwToday(); jdwView.y=t.y; jdwView.m=t.m; if (t.y<2026 || (t.y===2026 && t.m<10)){ jdwView.y=2026; jdwView.m=10; } jdwInit=true; }
+      if (sb && !jdwLoaded) jdwLoad(); else jdwRender();
+    }
   }
   tabFillBtn.addEventListener("click", function(){ showTab("fill"); });
   tabHistBtn.addEventListener("click", function(){ showTab("hist"); });
+  tabJadwalBtn.addEventListener("click", function(){ showTab("jadwal"); });
+
+  /* ---------------- Jadwal Kunjungan (rotasi 19 cabang, 1 per hari kerja) ---------------- */
+  var JDW_BRANCHES=["BINTARA","CILANGKAP","CONDET","CEGER","CIBINONG","CIKAMPEK","CIBUBUR","CINERE","DRAMAGA","JATIWARINGIN","JATIMULYA","JATIBENING","KLENDER","PEJATEN","RADJIMAN","SAWANGAN","KARAWANG","WARBONG","CIMANGGIS"];
+  var JDW_EPOCH=Date.UTC(2026,10,2); // Senin 2 Nov 2026 -> BINTARA (index 0)
+  var JDW_MONTHS=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  var JDW_DOW=["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+  var jdwView={y:2026,m:10}, jdwInit=false, jdwLoaded=false, jdwTableMissing=false;
+  var jdwMap={}; // "YYYY-MM-DD" -> [{id,branch}]
+  function jdwToday(){ var n=new Date(); return {y:n.getFullYear(), m:n.getMonth(), d:n.getDate()}; }
+  function jdwKey(y,m,d){ return y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0"); }
+  function jdwWorkIndex(y,m,d){
+    var days=Math.round((Date.UTC(y,m,d)-JDW_EPOCH)/86400000);
+    if (days<0) return -1;
+    var sundays = days>=7 ? Math.floor((days-7)/7)+1 : 0;
+    return days - sundays;
+  }
+  function jdwRotationBranch(y,m,d){
+    if (new Date(Date.UTC(y,m,d)).getUTCDay()===0) return null;
+    var idx=jdwWorkIndex(y,m,d);
+    return idx<0 ? null : JDW_BRANCHES[idx % JDW_BRANCHES.length];
+  }
+  function jdwDayList(y,m,d){ var a=jdwMap[jdwKey(y,m,d)]; return a?a:[]; }
+  function jdwLoad(){
+    if (!sb){ jdwLoaded=true; return; }
+    sb.from("visit_schedule").select("*").then(function(res){
+      if (res.error){ jdwTableMissing=true; jdwLoaded=true; if (viewJadwal.style.display!=="none") jdwRender(); return; }
+      jdwTableMissing=false; jdwMap={};
+      (res.data||[]).forEach(function(r){ var k=r.visit_date; (jdwMap[k]=jdwMap[k]||[]).push({id:r.id, branch:r.branch}); });
+      jdwLoaded=true;
+      if (viewJadwal.style.display!=="none") jdwRender();
+    }).catch(function(){ jdwTableMissing=true; jdwLoaded=true; if (viewJadwal.style.display!=="none") jdwRender(); });
+  }
+  function jdwRender(){
+    var t=jdwToday(), y=jdwView.y, m=jdwView.m;
+    document.getElementById("jdwLabel").textContent=JDW_MONTHS[m]+" "+y;
+    document.getElementById("jdwPrev").disabled = (y<2026)||(y===2026&&m<=10);
+    var th=document.getElementById("jdwTableHint"); if (th) th.style.display = jdwTableMissing ? "" : "none";
+    var grid=document.getElementById("jdwGrid"); grid.innerHTML="";
+    var first=new Date(Date.UTC(y,m,1)).getUTCDay();
+    var dim=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+    for (var b=0;b<first;b++){ var e=document.createElement("div"); e.className="jdw-cell empty"; grid.appendChild(e); }
+    var agenda=document.getElementById("jdwAgenda"); agenda.innerHTML="";
+    var weeks={}, any=false;
+    for (var d=1;d<=dim;d++){
+      var dow=new Date(Date.UTC(y,m,d)).getUTCDay();
+      var list=jdwDayList(y,m,d);
+      var isToday=(y===t.y&&m===t.m&&d===t.d);
+      var cell=document.createElement("div");
+      cell.className="jdw-cell"+(dow===0?" sun":"")+(list.length?" has":"")+(isToday?" today":"");
+      cell.setAttribute("data-day", d);
+      var inner='<div class="d">'+d+"</div>";
+      if (list.length){ inner+=list.map(function(x){ return '<div class="br">'+esc(x.branch)+"</div>"; }).join(""); }
+      else if (dow!==0){ inner+='<div class="jdw-add-hint">+</div>'; }
+      cell.innerHTML=inner;
+      grid.appendChild(cell);
+      if (list.length){ any=true; var wk=Math.ceil((d+first)/7); (weeks[wk]=weeks[wk]||[]).push({d:d,dow:dow,list:list,today:isToday}); }
+    }
+    if (!any){ agenda.innerHTML='<div class="jdwm-empty" style="padding:10px 2px;">Belum ada jadwal bulan ini. Tap tanggal untuk menetapkan cabang, atau tekan "Isi otomatis".</div>'; }
+    else Object.keys(weeks).forEach(function(wk){
+      var h=document.createElement("div"); h.className="jdw-wk"; h.textContent="Minggu "+wk; agenda.appendChild(h);
+      weeks[wk].forEach(function(it){
+        var names=it.list.map(function(x){ return esc(x.branch); }).join(", ");
+        var row=document.createElement("div"); row.className="jdw-row"+(it.today?" today":""); row.setAttribute("data-day", it.d);
+        row.innerHTML='<div class="date"><div class="dd">'+it.d+'</div><div class="dn">'+JDW_DOW[it.dow]+'</div></div><div class="bar"></div><div><div class="nm">'+names+'</div><div class="sub">Kunjungan audit harian</div></div>'+(it.today?'<span class="pill">HARI INI</span>':"");
+        agenda.appendChild(row);
+      });
+    });
+  }
+  document.getElementById("jdwPrev").addEventListener("click", function(){ if (this.disabled) return; jdwView.m--; if (jdwView.m<0){ jdwView.m=11; jdwView.y--; } jdwRender(); });
+  document.getElementById("jdwNext").addEventListener("click", function(){ jdwView.m++; if (jdwView.m>11){ jdwView.m=0; jdwView.y++; } jdwRender(); });
+  document.getElementById("jdwGrid").addEventListener("click", function(e){ var c=e.target.closest(".jdw-cell[data-day]"); if (c) openJadwalEditor(Number(c.getAttribute("data-day"))); });
+  document.getElementById("jdwAgenda").addEventListener("click", function(e){ var r=e.target.closest(".jdw-row[data-day]"); if (r) openJadwalEditor(Number(r.getAttribute("data-day"))); });
+
+  /* editor: tetapkan cabang untuk satu tanggal */
+  var jadwalModalEl=document.getElementById("jadwalModal");
+  var jdwmSelect=document.getElementById("jdwmSelect");
+  var jdwEditDay=null;
+  JDW_BRANCHES.forEach(function(b){ var o=document.createElement("option"); o.value=b; o.textContent=b; jdwmSelect.appendChild(o); });
+  function jdwRenderChips(){
+    var list=jdwDayList(jdwView.y,jdwView.m,jdwEditDay), box=document.getElementById("jdwmChips");
+    if (!list.length){ box.innerHTML='<span class="jdwm-empty">Belum ada cabang untuk tanggal ini.</span>'; return; }
+    box.innerHTML=list.map(function(x){ return '<span class="jdwm-chip">'+esc(x.branch)+'<button type="button" data-rm="'+esc(String(x.id))+'" aria-label="Hapus">✕</button></span>'; }).join("");
+  }
+  function openJadwalEditor(d){
+    if (jdwTableMissing){ toast("Buat tabel visit_schedule dulu di Supabase."); return; }
+    jdwEditDay=d;
+    document.getElementById("jdwmTitle").textContent="Jadwal "+d+" "+JDW_MONTHS[jdwView.m]+" "+jdwView.y;
+    jdwRenderChips();
+    jadwalModalEl.classList.add("show"); jadwalModalEl.setAttribute("aria-hidden","false");
+  }
+  function closeJadwalEditor(){ jadwalModalEl.classList.remove("show"); jadwalModalEl.setAttribute("aria-hidden","true"); jdwEditDay=null; jdwRender(); }
+  jadwalModalEl.addEventListener("click", function(e){ if (e.target===jadwalModalEl) closeJadwalEditor(); });
+  document.getElementById("jdwmClose").addEventListener("click", closeJadwalEditor);
+  document.getElementById("jdwmAdd").addEventListener("click", function(){
+    var br=jdwmSelect.value; if (!br || jdwEditDay==null) return;
+    var key=jdwKey(jdwView.y,jdwView.m,jdwEditDay);
+    var list=jdwMap[key]=jdwMap[key]||[];
+    if (list.some(function(x){ return x.branch===br; })){ toast("Cabang itu sudah ada di tanggal ini."); return; }
+    if (sb){
+      sb.from("visit_schedule").insert({visit_date:key, branch:br}).select().single().then(function(res){
+        if (res.error) throw res.error;
+        list.push({id:res.data.id, branch:br}); jdwRenderChips();
+      }).catch(function(){ toast("Gagal menyimpan. Cek tabel/policy visit_schedule."); });
+    } else { list.push({id:"local-"+Date.now(), branch:br}); jdwRenderChips(); }
+  });
+  document.getElementById("jdwmChips").addEventListener("click", function(e){
+    var btn=e.target.closest("[data-rm]"); if (!btn) return;
+    var id=btn.getAttribute("data-rm"), key=jdwKey(jdwView.y,jdwView.m,jdwEditDay), list=jdwMap[key]||[];
+    function done(){ jdwMap[key]=list.filter(function(x){ return String(x.id)!==id; }); jdwRenderChips(); }
+    if (sb && id.indexOf("local-")!==0){
+      sb.from("visit_schedule").delete().eq("id", id).then(function(res){ if (res&&res.error){ toast("Gagal menghapus."); return; } done(); }).catch(function(){ toast("Gagal menghapus."); });
+    } else done();
+  });
+  document.getElementById("jdwAutofill").addEventListener("click", function(){
+    if (jdwTableMissing){ toast("Buat tabel visit_schedule dulu di Supabase."); return; }
+    var y=jdwView.y, m=jdwView.m, dim=new Date(Date.UTC(y,m+1,0)).getUTCDate(), rows=[];
+    for (var d=1;d<=dim;d++){
+      if (new Date(Date.UTC(y,m,d)).getUTCDay()===0) continue;
+      if (jdwDayList(y,m,d).length) continue;
+      var br=jdwRotationBranch(y,m,d); if (br) rows.push({visit_date:jdwKey(y,m,d), branch:br});
+    }
+    if (!rows.length){ toast("Semua hari kerja bulan ini sudah terisi."); return; }
+    if (sb){
+      sb.from("visit_schedule").insert(rows).select().then(function(res){
+        if (res.error){ toast("Gagal mengisi. Cek tabel/policy visit_schedule."); return; }
+        (res.data||[]).forEach(function(r){ var k=r.visit_date; (jdwMap[k]=jdwMap[k]||[]).push({id:r.id, branch:r.branch}); });
+        jdwRender(); toast("Rotasi otomatis terisi. Bisa kamu ubah per tanggal.");
+      }).catch(function(){ toast("Gagal mengisi."); });
+    } else { rows.forEach(function(r){ (jdwMap[r.visit_date]=jdwMap[r.visit_date]||[]).push({id:"local-"+Math.random(), branch:r.branch}); }); jdwRender(); }
+  });
 
   /* ---------------- reset / save ---------------- */
   function resetForm(){
@@ -1541,6 +1748,10 @@
         }catch(e){}
       }
     });
+
+    // Jadwal kunjungan: muat dari DB + sinkron realtime
+    jdwLoad();
+    try{ sb.channel("schedule-live").on("postgres_changes", { event:"*", schema:"public", table:"visit_schedule" }, function(){ jdwLoad(); }).subscribe(); }catch(e){}
   }
 
   /* ---------------- evaluation report (xlsx export) ----------------
