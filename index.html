@@ -400,6 +400,8 @@
   .jdwm-add{display:flex;gap:9px;margin-top:6px;}
   .jdwm-add select{flex:1;}
   .jdwm-add button{flex:none;width:auto;padding:11px 16px;}
+  .jdw-lockbtn{width:100%;margin-bottom:12px;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);font-size:13.5px;font-weight:700;cursor:pointer;}
+  .jdw-lockbtn.on{background:var(--accent-tint);border-color:rgba(198,243,46,.4);color:var(--accent);}
   .ticket-body{display:none; border-top:1px solid var(--line); padding:12px 16px; background:var(--surface-2);}
   .ticket.open .ticket-body{display:block;}
   .subgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px;}
@@ -540,6 +542,7 @@
   <div id="viewJadwal" style="display:none;">
     <div class="sectionHead"><h2>Jadwal Kunjungan</h2><span class="hint">Tap tanggal untuk menetapkan cabang.</span></div>
     <div class="jdw-tablehint" id="jdwTableHint" style="display:none;">Tabel jadwal belum ada di database. Jalankan SQL <b>visit_schedule</b> yang diberikan admin di Supabase, lalu buka ulang tab ini.</div>
+    <button type="button" id="jdwLockBtn" class="jdw-lockbtn">&#128274; Buka Mode Edit</button>
     <div class="jdw-monthbar"><button id="jdwPrev" aria-label="Bulan sebelumnya">&lsaquo;</button><b id="jdwLabel">—</b><button id="jdwNext" aria-label="Bulan berikutnya">&rsaquo;</button></div>
     <div class="jdw-cal"><div class="jdw-dow"><span class="sun">Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span></div><div class="jdw-grid" id="jdwGrid"></div></div>
     <div class="jdw-legend"><span><i style="background:var(--accent-tint);border:1px solid rgba(198,243,46,.4)"></i>Ada kunjungan</span><span><i style="background:transparent;box-shadow:inset 0 0 0 2px var(--accent)"></i>Hari ini</span></div>
@@ -582,6 +585,15 @@
     <label for="jdwmSelect">Tambah cabang</label>
     <div class="jdwm-add"><select id="jdwmSelect"></select><button type="button" class="editBtnSave" id="jdwmAdd">Tambah</button></div>
     <div class="editActions"><button type="button" class="editBtnCancel" id="jdwmClose">Selesai</button></div>
+  </div>
+</div>
+<div class="editModal" id="pinModal" aria-hidden="true">
+  <div class="editCard" role="dialog" aria-modal="true" aria-label="Masukkan PIN">
+    <h3>Masukkan PIN</h3>
+    <p class="editSub">PIN diperlukan untuk mengubah atau membuat jadwal. Melihat jadwal tidak perlu PIN.</p>
+    <input type="password" id="pinInput" inputmode="numeric" autocomplete="off" placeholder="PIN">
+    <div id="pinError" style="display:none;color:var(--bad);font-size:12.5px;margin-top:8px;">PIN salah, coba lagi.</div>
+    <div class="editActions"><button type="button" class="editBtnCancel" id="pinCancel">Batal</button><button type="button" class="editBtnSave" id="pinOk">Buka</button></div>
   </div>
 </div>
 <div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt="Bukti foto diperbesar"></div>
@@ -1299,6 +1311,8 @@
     document.getElementById("jdwLabel").textContent=JDW_MONTHS[m]+" "+y;
     document.getElementById("jdwPrev").disabled = (y<2026)||(y===2026&&m<=10);
     var th=document.getElementById("jdwTableHint"); if (th) th.style.display = jdwTableMissing ? "" : "none";
+    var af=document.getElementById("jdwAutofill"); if (af) af.style.display = jdwUnlocked ? "" : "none";
+    jdwUpdateLockBtn();
     var grid=document.getElementById("jdwGrid"); grid.innerHTML="";
     var first=new Date(Date.UTC(y,m,1)).getUTCDay();
     var dim=new Date(Date.UTC(y,m+1,0)).getUTCDate();
@@ -1314,7 +1328,7 @@
       cell.setAttribute("data-day", d);
       var inner='<div class="d">'+d+"</div>";
       if (list.length){ inner+=list.map(function(x){ return '<div class="br">'+esc(x.branch)+"</div>"; }).join(""); }
-      else if (dow!==0){ inner+='<div class="jdw-add-hint">+</div>'; }
+      else if (dow!==0 && jdwUnlocked){ inner+='<div class="jdw-add-hint">+</div>'; }
       cell.innerHTML=inner;
       grid.appendChild(cell);
       if (list.length){ any=true; var wk=Math.ceil((d+first)/7); (weeks[wk]=weeks[wk]||[]).push({d:d,dow:dow,list:list,today:isToday}); }
@@ -1332,8 +1346,8 @@
   }
   document.getElementById("jdwPrev").addEventListener("click", function(){ if (this.disabled) return; jdwView.m--; if (jdwView.m<0){ jdwView.m=11; jdwView.y--; } jdwRender(); });
   document.getElementById("jdwNext").addEventListener("click", function(){ jdwView.m++; if (jdwView.m>11){ jdwView.m=0; jdwView.y++; } jdwRender(); });
-  document.getElementById("jdwGrid").addEventListener("click", function(e){ var c=e.target.closest(".jdw-cell[data-day]"); if (c) openJadwalEditor(Number(c.getAttribute("data-day"))); });
-  document.getElementById("jdwAgenda").addEventListener("click", function(e){ var r=e.target.closest(".jdw-row[data-day]"); if (r) openJadwalEditor(Number(r.getAttribute("data-day"))); });
+  document.getElementById("jdwGrid").addEventListener("click", function(e){ var c=e.target.closest(".jdw-cell[data-day]"); if (c){ var dd=Number(c.getAttribute("data-day")); jdwRequireEdit(function(){ openJadwalEditor(dd); }); } });
+  document.getElementById("jdwAgenda").addEventListener("click", function(e){ var r=e.target.closest(".jdw-row[data-day]"); if (r){ var dd=Number(r.getAttribute("data-day")); jdwRequireEdit(function(){ openJadwalEditor(dd); }); } });
 
   /* editor: tetapkan cabang untuk satu tanggal */
   var jadwalModalEl=document.getElementById("jadwalModal");
@@ -1376,6 +1390,7 @@
     } else done();
   });
   document.getElementById("jdwAutofill").addEventListener("click", function(){
+    if (!jdwUnlocked){ jdwRequireEdit(function(){}); return; }
     if (jdwTableMissing){ toast("Buat tabel visit_schedule dulu di Supabase."); return; }
     var y=jdwView.y, m=jdwView.m, dim=new Date(Date.UTC(y,m+1,0)).getUTCDate(), rows=[];
     for (var d=1;d<=dim;d++){
@@ -1392,6 +1407,30 @@
       }).catch(function(){ toast("Gagal mengisi."); });
     } else { rows.forEach(function(r){ (jdwMap[r.visit_date]=jdwMap[r.visit_date]||[]).push({id:"local-"+Math.random(), branch:r.branch}); }); jdwRender(); }
   });
+
+  /* ---- Gerbang PIN: melihat jadwal bebas, mengubah/membuat butuh PIN ---- */
+  var JDW_PIN_HASH="03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; // SHA-256 dari PIN default "1234"
+  var jdwUnlocked=false, jdwPendingEdit=null;
+  async function jdwHash(s){ try{ var buf=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return Array.prototype.map.call(new Uint8Array(buf), function(b){ return b.toString(16).padStart(2,"0"); }).join(""); }catch(e){ return null; } }
+  function jdwUpdateLockBtn(){ var btn=document.getElementById("jdwLockBtn"); if(!btn) return; if (jdwUnlocked){ btn.innerHTML="&#128275; Mode Edit aktif — Kunci"; btn.classList.add("on"); } else { btn.innerHTML="&#128274; Buka Mode Edit"; btn.classList.remove("on"); } }
+  function jdwRequireEdit(fn){ if (jdwUnlocked){ fn(); return; } jdwPendingEdit=fn; openPinModal(); }
+  var pinModalEl=document.getElementById("pinModal");
+  function openPinModal(){ document.getElementById("pinInput").value=""; document.getElementById("pinError").style.display="none"; pinModalEl.classList.add("show"); pinModalEl.setAttribute("aria-hidden","false"); setTimeout(function(){ try{ document.getElementById("pinInput").focus(); }catch(e){} }, 60); }
+  function closePinModal(){ pinModalEl.classList.remove("show"); pinModalEl.setAttribute("aria-hidden","true"); jdwPendingEdit=null; }
+  async function jdwTryPin(){
+    var h=await jdwHash((document.getElementById("pinInput").value||"").trim());
+    if (h && h===JDW_PIN_HASH){
+      jdwUnlocked=true;
+      pinModalEl.classList.remove("show"); pinModalEl.setAttribute("aria-hidden","true");
+      jdwRender();
+      var fn=jdwPendingEdit; jdwPendingEdit=null; if (typeof fn==="function") fn();
+    } else { document.getElementById("pinError").style.display=""; }
+  }
+  document.getElementById("pinOk").addEventListener("click", jdwTryPin);
+  document.getElementById("pinInput").addEventListener("keydown", function(e){ if (e.key==="Enter") jdwTryPin(); });
+  document.getElementById("pinCancel").addEventListener("click", closePinModal);
+  pinModalEl.addEventListener("click", function(e){ if (e.target===pinModalEl) closePinModal(); });
+  document.getElementById("jdwLockBtn").addEventListener("click", function(){ if (jdwUnlocked){ jdwUnlocked=false; jdwRender(); } else { jdwPendingEdit=null; openPinModal(); } });
 
   /* ---------------- reset / save ---------------- */
   function resetForm(){
